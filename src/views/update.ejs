@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Producto Edicion</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body>
+
+    <%- include("partials/navigation") %>
+
+    <div class="container p-4">
+        <div class="row">
+            <div class="col-md-4 offset-md-4">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h3>Producto Edicion</h3>
+                    </div>
+                    <div class="card-body">
+                        <img src="<%= image.path %>" class="card-img-top" alt="<%= image.filename %>">
+                        <form action="/update/<%= image._id %>" method="post" enctype="multipart/form-data">
+                            <div class="input-group mb-3">
+                                <div class="custom-file">
+                                    <input type="file" name="image" class="custom-file-input" id="inputGroupFile02" value="<%= image.path %>" disabled>
+                                    <label class="custom-file-label" for="inputGroupFile02" aria-describedby="inputGroupFileAddon02">No Modificable</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" name="title" placeholder="Nombre" class="form-control" value="<%= image.title %>">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" name="cantidad" placeholder="Cantidad en Stock" class="form-control"value="<%= image.cantidad %>" >
+                            </div>
+                            <div class="form-group">
+                                <input type="number" name="precio" placeholder="Precio Venta" class="form-control"value="<%= image.precio %>">
+                            </div>
+                            <div class="form-group">
+                                <input type="text" name="codigo" placeholder="Codigo" class="form-control" value="<%= image.codigo %>">
+                            </div>
+                            <div class="form-group">
+                                <input type="text" name="ciclo" placeholder="Ciclo" class="form-control" value="<%= image.ciclo %>">
+                            </div>
+                            <div class="form-group">
+                                <textarea name="description" placeholder="Descripcion" class="form-control" ><%= image.description %></textarea>
+                            </div>
+                            <div class="form-group">                  
+                                <select name="categoria" class="form-control" id="FormControlSelect1" >
+                                  <option value="<%= image.categoria %>"><%= image.categoria %></option>
+                                  <option value="1">Perfumeria</option>
+                                  <option value="2">Belleza de rostro</option>
+                                  <option value="3">Cuidados diarios</option>
+                                  <option value="4">Cabello</option>
+                                  <option value="5">Mama y bebe</option>
+                                  <option value="6">Fotoequilibrio</option>
+                                  <option value="7">Nature</option>
+                                  <option value="8">Creer para ver</option>
+                                </select>
+                            </div>
+                            <div class="form-group form-check">
+                                <input type="checkbox" name="estado" placeholder="Estado" class="form-check-input" value = "true" checked>   
+                                 Producto Vigente            
+                            </div>
+
+                            <div class="form-group">
+                                <button class="btn btn-success btn-block">
+                                Actualizar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

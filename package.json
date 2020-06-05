@@ -1,0 +1,29 @@
+{
+  "name": "nodejs-solnatura",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src",
+    "start": "node src",
+    "sonarqube": "sonar-scanner"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cloudinary": "^1.21.0",
+    "ejs": "^2.6.1",
+    "express": "^4.16.4",
+    "fs-extra": "^7.0.1",
+    "mongoose": "^5.4.3",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.1",
+    "timeago.js": "^4.0.0-beta.2",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.9",
+    "sonar-scanner": "^3.1.0"
+  }
+}
