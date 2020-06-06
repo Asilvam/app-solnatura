@@ -50,14 +50,11 @@
                             <div class="form-group">                  
                                 <select name="categoria" class="form-control" id="FormControlSelect1" >
                                   <option value="<%= image.categoria %>"><%= image.categoria %></option>
-                                  <option value="1">Perfumeria</option>
-                                  <option value="2">Belleza de rostro</option>
-                                  <option value="3">Cuidados diarios</option>
-                                  <option value="4">Cabello</option>
-                                  <option value="5">Mama y bebe</option>
-                                  <option value="6">Fotoequilibrio</option>
-                                  <option value="7">Nature</option>
-                                  <option value="8">Creer para ver</option>
+                                  <% categorias.forEach(function (categoria) { %>
+			
+                                      <option value="<%= categoria.codigo %>"><%= categoria.nombre %></option>
+                               
+                                  <% }) %>
                                 </select>
                             </div>
                             <div class="form-group form-check">

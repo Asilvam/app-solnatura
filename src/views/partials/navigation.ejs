@@ -13,14 +13,11 @@
               Categorias
             </a>        
             <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                <a class="dropdown-item" href="/1">Perfumeria</a>
-                <a class="dropdown-item" href="/2">Belleza de rostro</a>
-                <a class="dropdown-item" href="/3">Cuidados diarios</a>
-                <a class="dropdown-item" href="/4">Cabello</a>
-                <a class="dropdown-item" href="/5">Mama y bebe</a>
-                <a class="dropdown-item" href="/6">Fotoequilibrio</a>
-                <a class="dropdown-item" href="/7">Nature</a>
-                <a class="dropdown-item" href="/8">Creer para ver</a>
+              <% categorias.forEach(function (categoria) { %>
+
+                <a class="dropdown-item" href="/cat/<%= categoria.codigo %>"><%= categoria.nombre %></a>
+
+              <% }) %>    
             </div>
           </li>
         </ul>

@@ -19,47 +19,15 @@ const Categoria = require('../models/Categoria');
 
 router.get('/', async (req, res) => {
     const images = await Image.find({estado:true});
-    res.render('index2', { images });
+    const categorias = await Categoria.find({estado:true});
+    res.render('index2', { images , categorias });
 });
 
 router.get('/cat/:id', async (req, res) => {  
     const { id } = req.params;
     const images = await Image.find({estado:true,categoria:id});
-    res.render('index2', { images });
-});
-
-router.get('/1', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:1});
-    res.render('index2', { images });
-});
-
-router.get('/2', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:2});
-    res.render('index2', { images });
-});
-router.get('/3', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:3});
-    res.render('index2', { images });
-});
-router.get('/4', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:4});
-    res.render('index2', { images });
-});
-router.get('/5', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:5});
-    res.render('index2', { images });
-});
-router.get('/6', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:6});
-    res.render('index2', { images });
-});
-router.get('/7', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:7});
-    res.render('index2', { images });
-});
-router.get('/8', async (req, res) => {
-    const images = await Image.find({estado:true,categoria:8});
-    res.render('index2', { images });
+    const categorias = await Categoria.find({estado:true});
+    res.render('index2', { images,categorias });
 });
 
 router.get('/modecat', async (req, res) => {
@@ -78,13 +46,15 @@ router.post('/modecat', async (req, res) => {
 
 router.get('/mode', async (req, res) => {
     const images = await Image.find();
-    res.render('index', { images });
+    const categorias = await Categoria.find({estado:true});
+    res.render('index', { images, categorias });
 });
 
 router.get('/update/:id', async (req, res, next) => {
     const image = await Image.findById(req.params.id);
+    const categorias = await Categoria.find({estado:true});
     // console.log(image)
-    res.render('update', { image });
+    res.render('update', { image,categorias });
   });
 
 router.post('/update/:id', async (req, res, next) => {
@@ -98,16 +68,15 @@ router.post('/update/:id', async (req, res, next) => {
     res.redirect('/mode');
  });  
 
-router.get('/upload', (req, res) => {
-    res.render('upload');
+router.get('/upload', async (req, res) => {
+    const categorias = await Categoria.find({estado:true});
+    res.render('upload', { categorias });
 });
 
 router.post('/upload', async (req, res) => {
     const image = new Image();
     const result = await cloudinary.v2.uploader.upload(req.file.path);
-
-    console.log(req.body);
-
+    // console.log(req.body);
     image.title = req.body.title;
     image.precio = req.body.precio;
     image.cantidad = req.body.cantidad;
@@ -133,7 +102,8 @@ router.post('/upload', async (req, res) => {
 router.get('/image/:id', async (req, res) => {
     const { id } = req.params;
     const image = await Image.findById(id);
-    res.render('profile', { image });
+    const categorias = await Categoria.find({estado:true});
+    res.render('profile', { image, categorias });
 });
 
 router.get('/image/:id/delete', async (req, res) => {
