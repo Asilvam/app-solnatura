@@ -15,14 +15,16 @@ cloudinary.config(
 
 // Models
 const Image = require('../models/Image');
+const Categoria = require('../models/Categoria');
 
 router.get('/', async (req, res) => {
     const images = await Image.find({estado:true});
     res.render('index2', { images });
 });
 
-router.get('/1', async (req, res) => {  
-    const images = await Image.find({estado:true,categoria:1});
+router.get('/cat/:id', async (req, res) => {  
+    const { id } = req.params;
+    const images = await Image.find({estado:true,categoria:id});
     res.render('index2', { images });
 });
 router.get('/2', async (req, res) => {  
@@ -54,6 +56,19 @@ router.get('/8', async (req, res) => {
     res.render('index2', { images });
 });
 
+router.get('/modecat', async (req, res) => {
+    const categorias = await Categoria.find();
+    res.render('cat', { categorias });
+});
+
+router.post('/modecat', async (req, res) => {
+    const categoria = new Categoria();
+    // console.log(req.body);
+    categoria.nombre = req.body.nombre;
+    categoria.codigo = req.body.codigo;
+    await categoria.save();
+    res.redirect('/modecat');
+});
 
 router.get('/mode', async (req, res) => {
     const images = await Image.find();
@@ -121,6 +136,13 @@ router.get('/image/:id/delete', async (req, res) => {
     const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id);
     //console.log(result);
     res.redirect('/mode');
+});
+
+router.get('/categoria/:id/delete', async (req, res) => {
+    const { id } = req.params;
+    const catDeleted = await Categoria.findByIdAndDelete(id);
+    //console.log(result);
+    res.redirect('/modecat');
 });
 
 module.exports = router;

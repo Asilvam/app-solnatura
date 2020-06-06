@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="https://res.cloudinary.com/dujg9sojg/image/upload/v1591400278/favicon-32x32.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Subir Categoria</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body>
+
+    <%- include("partials/navigation") %>
+
+    <div class="container p-4">
+        <div class="row">
+            <div class="col-md-4 offset-md-4">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h3>Categoria nueva</h3>
+                    </div>
+                    <div class="card-body">
+                        <form action="/modecat" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <input type="text" name="codigo" placeholder="Codigo Categoria" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" name="nombre" placeholder="Nombre Categoria" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-success btn-block">
+                                    Guardar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+       
+            <% categorias.forEach(function (categoria) { %>
+                <div class="col-md-4 offset-md-4">
+                    <div class="card">
+                        <div class="card-body">       
+                                <table class="table table-striped">
+                                    <tr>
+                                        <th scope="row">Codigo</th>
+                                        <td scope="col"><%= categoria.codigo %></td>
+                                        <th scope="row">Estado</th>     
+                                        <td scope="col"><%= categoria.estado %></td>  
+                                    </tr>
+                                        <tr>
+                                            <th scope="row">Categoria</th>
+                                            <td scope="col" colspan="4"><%= categoria.nombre %></td>                    
+                                        </tr>
+                                </table>     
+                                <a href="/categoria/<%= categoria._id%>/delete" class="btn btn-danger btn-block">
+                                    Borrar 
+                                </a>               
+                        </div>
+                    </div>
+                </div>
+            <% }) %>     
+        </div>
+    </div>
+</body>
+</html>
