@@ -27,6 +27,12 @@ router.get('/cat/:id', async (req, res) => {
     const images = await Image.find({estado:true,categoria:id});
     res.render('index2', { images });
 });
+
+router.get('/1', async (req, res) => {  
+    const images = await Image.find({estado:true,categoria:1});
+    res.render('index2', { images });
+});
+
 router.get('/2', async (req, res) => {  
     const images = await Image.find({estado:true,categoria:2});
     res.render('index2', { images });
