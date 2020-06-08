@@ -106,7 +106,7 @@ router.get('/image/:id', async (req, res) => {
     res.render('profile', { image, categorias });
 });
 
-//Buscar
+//Buscar privado
 router.post('/search', async (req, res)=>  {
     var q = eval("/^.*"+req.body.buscar+".*$/i");
     const images = await   Image.find({ 
@@ -116,6 +116,18 @@ router.post('/search', async (req, res)=>  {
     //console.log(req.body.buscar," ",q);
     const categorias = await Categoria.find({estado:true});
     res.render('index', { images, categorias });
+});
+
+//Buscar publico
+router.post('/search_pub', async (req, res)=>  {
+    var q = eval("/^.*"+req.body.buscar+".*$/i");
+    const images = await   Image.find({ 
+        title : q 
+        ///^.*hidr.*$/i
+    });
+    //console.log(req.body.buscar," ",q);
+    const categorias = await Categoria.find({estado:true});
+    res.render('index2', { images, categorias });
 });
 
 
