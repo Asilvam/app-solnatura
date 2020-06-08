@@ -20,13 +20,22 @@
           </li>
         </ul>
       </div>
-        <!-- <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/modecat"><i class="fas fa-cog"></i> Categoria Nueva</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/upload"><i class="fas fa-upload"></i> Upload Nuevo</a>
                 </li>
             </ul>
-        </div> -->
+            <form action="/search" method="post" enctype="multipart/form-data" class="form-inline my-2 my-lg-0">
+                <input class="form-control mr-sm-2" type="search" name ="buscar" placeholder="Buscar Codigo" aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Buscar</button>
+              </form>
+        </div>
+
+        
 </nav>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>

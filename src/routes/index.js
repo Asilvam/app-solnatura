@@ -106,6 +106,19 @@ router.get('/image/:id', async (req, res) => {
     res.render('profile', { image, categorias });
 });
 
+//Buscar
+router.post('/search', async (req, res)=>  {
+    var q = eval("/^.*"+req.body.buscar+".*$/i");
+    const images = await   Image.find({ 
+        title : q 
+        ///^.*hidr.*$/i
+    }).limit(10);
+    //console.log(req.body.buscar," ",q);
+    const categorias = await Categoria.find({estado:true});
+    res.render('index', { images, categorias });
+});
+
+
 router.get('/image/:id/delete', async (req, res) => {
     const { id } = req.params;
     const imageDeleted = await Image.findByIdAndDelete(id);
