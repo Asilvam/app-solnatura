@@ -112,7 +112,7 @@ router.post('/search', async (req, res)=>  {
     const images = await   Image.find({ 
         title : q 
         ///^.*hidr.*$/i
-    }).limit(10);
+    });
     //console.log(req.body.buscar," ",q);
     const categorias = await Categoria.find({estado:true});
     res.render('index', { images, categorias });
