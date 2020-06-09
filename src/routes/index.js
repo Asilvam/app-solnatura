@@ -122,7 +122,8 @@ router.post('/search', async (req, res)=>  {
 router.post('/search_pub', async (req, res)=>  {
     var q = eval("/^.*"+req.body.buscar+".*$/i");
     const images = await   Image.find({ 
-        title : q 
+        title : q ,
+        estado:true
         ///^.*hidr.*$/i
     });
     //console.log(req.body.buscar," ",q);
