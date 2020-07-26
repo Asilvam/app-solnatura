@@ -5,9 +5,9 @@ const router = Router();
 
 const cloudinary = require("cloudinary");
 cloudinary.config({
-  cloud_name: "dujg9sojg",
-  api_key: "523798586227781",
-  api_secret: "2iJczEt0gmTbLlaADGa9LVTj6fw",
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
 });
 
 // Models
