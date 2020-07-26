@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src",
-    "start": "node src",
+    "dev": "cross-env NODE_ENV=development nodemon src",
+    "start": "cross-env NODE_ENV=production node src",
     "sonarqube": "sonar-scanner"
   },
   "keywords": [],
@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "cloudinary": "^1.21.0",
+    "cross-env": "^7.0.2",
     "dotenv": "^8.2.0",
     "ejs": "^2.6.1",
     "express": "^4.16.4",
