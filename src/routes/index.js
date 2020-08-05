@@ -28,7 +28,7 @@ router.get("/cat/:id", async (req, res) => {
 });
 
 router.get("/modecat", async (req, res) => {
-  const categorias = await Categoria.find();
+  const categorias = await Categoria.find().sort({codigo: 1});
   res.render("cat", { categorias });
 });
 
