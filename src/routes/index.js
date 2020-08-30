@@ -41,7 +41,7 @@ router.post("/modecat", async (req, res) => {
   res.redirect("/modecat");
 });
 
-router.get("/mode", async (req, res) => {
+router.get("/modesol", async (req, res) => {
   const images = await Image.find();
   const categorias = await Categoria.find({ estado: true });
   res.render("index", { images, categorias });
