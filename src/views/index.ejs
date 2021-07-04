@@ -1,69 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>Producto</title>
     <%- include("partials/head") -%>
-  </head>
+</head>
 
-  <body>
-    <%- include("partials/navigationM") %>
-    <div class="container p-4">
-      <div class="row">
+<body>
+<%- include("partials/navigationM") %>
+<div class="container p-4">
+    <div class="row">
         <div class="card-columns">
-          <% images.forEach(function (image) { %>
-          <div class="card animated fadeInDown">
-            <img
-              src="<%= image.path %>"
-              class="card-img-top"
-              alt="<%= image.filename %>"
-            />
-            <div class="card-body">
-              <h5 class="card-title"><%= image.title %></h5>
-              <table class="table table-striped">
-                <tr>
-                  <th scope="row">Precio</th>
-                  <td scope="col">$ <%= image.precio %></td>
-                  <th scope="row">Stock</th>
-                  <td scope="col"><%= image.cantidad %></td>
-                </tr>
-                <tr>
-                  <th scope="row">Codigo</th>
-                  <td scope="col"><%= image.codigo %></td>
-                  <th scope="row">Ciclo</th>
-                  <td scope="col"><%= image.ciclo %></td>
-                </tr>
-                <tr>
-                  <th scope="row">Estado</th>
-                  <td scope="col"><%= image.estado %></td>
-                  <th scope="row">Categoria</th>
-                  <td scope="col"><%= image.categoria %></td>
-                </tr>
+            <% images.forEach(function (image) { %>
+                <div class="card animated fadeInDown">
+                    <img
+                            src="<%= image.path %>"
+                            class="card-img-top"
+                            alt="<%= image.filename %>"
+                    />
+                    <div class="card-body">
+                        <h5 class="card-title"><%= image.title %></h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <th scope="row">Precio</th>
+                                <td scope="col">$ <%= image.precio %></td>
+                                <th scope="row">Stock</th>
+                                <td scope="col"><%= image.cantidad %></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Codigo</th>
+                                <td scope="col"><%= image.codigo %></td>
+                                <th scope="row">Ciclo</th>
+                                <td scope="col"><%= image.ciclo %></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Estado</th>
+                                <td scope="col"><%= image.estado %></td>
+                                <th scope="row">Categoria</th>
+                                <td scope="col"><%= image.categoria %></td>
+                            </tr>
 
-                <td scope="col" align="justify" colspan="4">
-                  <p class="card-text"><%= image.description %></p>
-                </td>
-              </table>
-
-              <a
-                href="/update/<%= image._id %>"
-                class="btn btn-primary btn-block"
-              >
-                Modificar
-              </a>
-              <a
-                href="/image/<%= image._id %>"
-                class="btn btn-primary btn-block"
-              >
-                Borrar
-              </a>
-            </div>
-          </div>
-          <% }) %>
+                            <td scope="col" align="justify" colspan="4">
+                                <p class="card-text"><%= image.description %></p>
+                            </td>
+                        </table>
+                        <a
+                                href="/update/<%= image._id %>"
+                                class="btn btn-primary btn-block"
+                        >
+                            Modificar
+                        </a>
+                        <a
+                                href="/image/<%= image._id %>"
+                                class="btn btn-primary btn-block"
+                        >
+                            Borrar
+                        </a>
+                    </div>
+                </div>
+            <% }) %>
         </div>
-      </div>
     </div>
-  </body>
+</div>
+</body>
 </html>
