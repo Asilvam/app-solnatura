@@ -2,7 +2,7 @@ const express = require("express");
 const morgan = require("morgan");
 const multer = require("multer");
 const uuid = require("uuid/v4");
-const { format } = require("timeago.js");
+const {format} = require("timeago.js");
 
 const path = require("path");
 
@@ -17,20 +17,20 @@ app.set("port", process.env.PORT || 3000);
 
 // middlewares
 app.use(morgan("dev"));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({extended: false}));
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, "public/img/uploads"),
-  filename: (req, file, cb, filename) => {
-    console.log(file);
-    cb(null, uuid() + path.extname(file.originalname));
-  },
+    destination: path.join(__dirname, "public/img/uploads"),
+    filename: (req, file, cb, filename) => {
+        console.log(file);
+        cb(null, uuid() + path.extname(file.originalname));
+    },
 });
-app.use(multer({ storage }).single("image"));
+app.use(multer({storage}).single("image"));
 
 // Global variables
 app.use((req, res, next) => {
-  app.locals.format = format;
-  next();
+    app.locals.format = format;
+    next();
 });
 
 // routes
@@ -41,5 +41,5 @@ app.use(express.static(path.join(__dirname, "public")));
 
 //starting server
 app.listen(app.get("port"), () => {
-  console.log("Server ON");
+    console.log("Server ON");
 });
