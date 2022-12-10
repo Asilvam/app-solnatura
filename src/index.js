@@ -1,8 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 const multer = require("multer");
-const uuid = require("uuid/v4");
-const { format } = require("timeago.js");
+const { uuid } = require('uuidv4');
 
 const path = require("path");
 
@@ -29,7 +28,6 @@ app.use(multer({ storage }).single("image"));
 
 // Global variables
 app.use((req, res, next) => {
-  app.locals.format = format;
   next();
 });
 

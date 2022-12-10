@@ -5,7 +5,6 @@ const URI =
 
 mongoose
   .connect(URI, {
-    useCreateIndex: true,
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
