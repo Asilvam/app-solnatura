@@ -1,57 +1,55 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>Productos</title>
     <%- include("partials/head") -%>
-  </head>
+</head>
 
-  <body>
-    <%- include("partials/navigation") %>
-    <div class="container p-4">
-      <div class="row">
+<body>
+<%- include("partials/navigation") %>
+<div class="container p-4">
+    <div class="row">
         <div class="card-columns">
-          <% images.forEach(function (image) { %>
+            <% images.forEach(function (image) { %>
 
-          <div class="card animated fadeInDown">
-            <img
-              src="<%= image.path %>"
-              class="card-img-top"
-              alt="<%= image.filename %>"
-            />
-            <div class="card-body">
-              <h5 class="card-title"><%= image.title %></h5>
-              <table class="table table-striped">
-                <tr>
-                  <th scope="row">Precio</th>
-                  <td scope="col">$ <%= image.precio %></td>
-                  <th scope="row">Stock</th>
-                  <td scope="col"><%= image.cantidad %></td>
-                </tr>
-                <tr>
-                  <th scope="row">Codigo</th>
-                  <td scope="col"><%= image.codigo %></td>
-                  <!-- <th scope="row">Ciclo</th>     
-                                        <td scope="col"><%= image.ciclo %></td> -->
-                </tr>
-                <td scope="col" align="justify" colspan="4">
-                  <p class="card-text"><%= image.description %></p>
-                </td>
-              </table>
-              <!-- <p class="card-text"><%= image.description %></p>    -->
-              <a
-                href="https://api.whatsapp.com/send?phone=56992513285&text=Hola,%20Me%20interesa%20este%20producto,%20<%= image.title %>%20<%= image.codigo %>-<%= image.ciclo %>- $<%= image.precio %>"
-                class="btn btn-primary btn-block"
-              >
-                Me interesa
-              </a>
-            </div>
-          </div>
-          <% }) %>
+                <div class="card animated fadeInDown">
+                    <img
+                            src="<%= image.path %>"
+                            class="card-img-top"
+                            alt="<%= image.filename %>"
+                    />
+                    <div class="card-body">
+                        <h5 class="card-title"><%= image.title %></h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <th>Precio</th>
+                                <td>$ <%= image.precio %></td>
+                                <th>Stock</th>
+                                <td><%= image.cantidad %></td>
+                            </tr>
+                            <tr>
+                                <th>Codigo</th>
+                                <td><%= image.codigo %></td>
+                            </tr>
+                            <td align="justify" colspan="4">
+                                <p class="card-text"><%= image.description %></p>
+                            </td>
+                        </table>
+                        <!-- <p class="card-text"><%= image.description %></p>    -->
+                        <a
+                                href="https://api.whatsapp.com/send?phone=56992513285&text=Hola,%20Me%20interesa%20este%20producto,%20<%= image.title %>%20<%= image.codigo %>-<%= image.ciclo %>- $<%= image.precio %>"
+                                class="btn btn-primary btn-block"
+                        >
+                            Me interesa
+                        </a>
+                    </div>
+                </div>
+            <% }) %>
         </div>
-      </div>
     </div>
-  </body>
+</div>
+</body>
 </html>
