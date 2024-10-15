@@ -130,8 +130,15 @@ router.post("/search_pub", async (req, res) => {
 router.get("/image/:id/delete", async (req, res) => {
     const {id} = req.params;
     const imageDeleted = await Image.findByIdAndDelete(id);
-    const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id);
-    //console.log(result);
+    try {
+        const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id, { invalidate: true });
+        console.log("Cloudinary result:", result); // Should log { result: 'ok' } if successful
+        if (result.result !== 'ok') {
+            console.error("Failed to delete image from Cloudinary");
+        }
+    } catch (error) {
+        console.error("Error deleting image from Cloudinary:", error);
+    }
     res.redirect("/mode");
 });
 

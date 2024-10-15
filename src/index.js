@@ -1,7 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 const multer = require("multer");
-const { uuid } = require('uuidv4');
+const { v4: uuidv4 } = require('uuid');
 
 const path = require("path");
 
@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
   destination: path.join(__dirname, "public/img/uploads"),
   filename: (req, file, cb, filename) => {
     console.log(file);
-    cb(null, uuid() + path.extname(file.originalname));
+    cb(null, uuidv4() + path.extname(file.originalname));
   },
 });
 app.use(multer({ storage }).single("image"));
