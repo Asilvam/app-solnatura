@@ -174,6 +174,22 @@
                 opacity: 0.6;
             }
         </style>
+        <script>
+            // Validación de tamaño de archivo (10MB)
+            document.getElementById('inputItemImg').addEventListener('change', function () {
+                const file = this.files[0];
+                if (file && file.size > 10 * 1024 * 1024) {
+                    alert('La imagen es demasiado pesada. El límite máximo permitido es de 10MB.');
+                    this.value = ''; // Limpiar el input
+                    const label = this.nextElementSibling;
+                    if (label) label.innerText = 'Seleccionar nueva foto...';
+                } else if (file) {
+                    // Actualizar label con el nombre del archivo
+                    const label = this.nextElementSibling;
+                    if (label) label.innerText = file.name;
+                }
+            });
+        </script>
 </body>
 
 </html>
