@@ -70,6 +70,18 @@ router.get("/mode", async (req, res, next) => {
     }
 });
 
+router.get("/mode/cat/:id", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const images = await Image.find({ categoria: id });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index", { images, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo filtrar por categoría en el panel de administrador.";
+        next(err);
+    }
+});
+
 router.get("/update/:id", async (req, res, next) => {
     try {
         const image = await Image.findById(req.params.id);
