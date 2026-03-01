@@ -68,12 +68,12 @@
                                 <%= image.description %>
                             </p>
 
-                            <a href="#"
-                                onclick="event.stopPropagation(); window.open('https://api.whatsapp.com/send?phone=56992513285&text=Hola,%20Me%20interesa%20este%20producto,%20<%= image.title %>%20<%= image.codigo %>-<%= image.ciclo %>-%20$<%= image.precio %>', '_blank');"
+                            <button type="button"
+                                onclick="event.stopPropagation(); addToCart('<%= image.title %>', '<%= image.codigo %>', '<%= image.ciclo %>', <%= image.precio %>)"
                                 class="btn btn-whatsapp btn-block mt-auto">
-                                <i class="fa-brands fa-whatsapp"></i>
-                                Me interesa
-                            </a>
+                                <i class="fa-solid fa-cart-plus"></i>
+                                Añadir al carrito
+                            </button>
                         </div>
                     </div>
                     <% }) %>
@@ -126,11 +126,11 @@
                                         class="fw-bold"></span>
                                 </p>
 
-                                <a id="modalWhatsappBtn" href="#"
-                                    class="btn btn-whatsapp w-100 py-3 rounded-pill fw-bold fs-6" target="_blank">
-                                    <i class="fa-brands fa-whatsapp fs-5 me-2 align-middle"></i>
-                                    ¡Me interesa este producto!
-                                </a>
+                                <button id="modalAddCartBtn" type="button"
+                                    class="btn btn-whatsapp w-100 py-3 rounded-pill fw-bold fs-6">
+                                    <i class="fa-solid fa-cart-plus fs-5 me-2 align-middle"></i>
+                                    Añadir al carrito
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -138,11 +138,197 @@
             </div>
         </div>
 
-        <script>
-            $(document).ready(function () {
-                $('#productModal').on('show.bs.modal', function (event) {
-                    var button = $(event.relatedTarget); // Botón (tarjeta) que disparó el modal
+        <!-- Floating Cart Button -->
+        <div id="floatingCartBtn" class="floating-cart rounded-circle shadow-lg" data-toggle="modal"
+            data-target="#cartModal">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span id="cartBadge" class="badge badge-danger rounded-circle position-absolute cart-badge">0</span>
+        </div>
 
+        <!-- Cart Modal -->
+        <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content"
+                    style="border-radius: 1rem; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                    <div class="modal-header bg-light"
+                        style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                        <h5 class="modal-title font-weight-bold" id="cartModalLabel">
+                            <i class="fa-solid fa-cart-shopping me-2" style="color: var(--verde-principal);"></i> Mi
+                            Carrito
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div id="cartEmptyMessage" class="text-center p-5 text-muted">
+                            <i class="fa-solid fa-basket-shopping fa-3x mb-3" style="color: #dee2e6;"></i>
+                            <p>Tu carrito está vacío.</p>
+                        </div>
+                        <ul id="cartItemsList" class="list-group list-group-flush">
+                            <!-- Items se llenan con JS -->
+                        </ul>
+                    </div>
+                    <div class="modal-footer bg-light"
+                        style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; justify-content: space-between;">
+                        <div class="font-weight-bold text-dark fs-5">Total: $<span id="cartTotal">0</span></div>
+                        <button type="button" id="btnSendOrder" class="btn btn-whatsapp rounded-pill px-4"
+                            onclick="sendWhatsAppOrder()">
+                            <i class="fa-brands fa-whatsapp mr-1"></i> Pedir por WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // --- Lógica del Carrito ---
+            let cart = JSON.parse(localStorage.getItem('solnatura_cart')) || [];
+
+            function addToCart(title, codigo, ciclo, precio) {
+                // Check if product already exists
+                const existingItemIndex = cart.findIndex(item => item.codigo === codigo && item.ciclo === ciclo);
+
+                if (existingItemIndex > -1) {
+                    // Increase quantity if it exists
+                    cart[existingItemIndex].cantidad = (cart[existingItemIndex].cantidad || 1) + 1;
+                } else {
+                    // Add new item with quantity 1
+                    cart.push({ title, codigo, ciclo, precio, cantidad: 1 });
+                }
+
+                saveCart();
+                renderCart();
+                animateCartBadge();
+            }
+
+            function removeFromCart(index) {
+                cart.splice(index, 1);
+                saveCart();
+                renderCart();
+            }
+
+            function updateQuantity(index, delta) {
+                if (cart[index].cantidad + delta > 0) {
+                    cart[index].cantidad += delta;
+                } else {
+                    // If quantity reaches 0, remove the item
+                    cart.splice(index, 1);
+                }
+                saveCart();
+                renderCart();
+            }
+
+            function saveCart() {
+                localStorage.setItem('solnatura_cart', JSON.stringify(cart));
+            }
+
+            function renderCart() {
+                const badge = document.getElementById('cartBadge');
+                const emptyMsg = document.getElementById('cartEmptyMessage');
+                const list = document.getElementById('cartItemsList');
+                const totalEl = document.getElementById('cartTotal');
+                const btnSend = document.getElementById('btnSendOrder');
+
+                // Calculate total items (sum of all quantities)
+                const totalItems = cart.reduce((sum, item) => sum + (item.cantidad || 1), 0);
+                badge.textContent = totalItems;
+
+                if (cart.length === 0) {
+                    emptyMsg.style.display = 'block';
+                    list.innerHTML = '';
+                    totalEl.textContent = '0';
+                    btnSend.disabled = true;
+                } else {
+                    emptyMsg.style.display = 'none';
+                    btnSend.disabled = false;
+
+                    let html = '';
+                    let total = 0;
+
+                    cart.forEach((item, index) => {
+                        const cantidad = item.cantidad || 1;
+                        const subtotal = parseFloat(item.precio) * cantidad;
+                        total += subtotal;
+
+                        html += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div style="flex: 1;">
+                                    <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 0.95rem;">${item.title}</h6>
+                                    <small class="text-muted">Cód: ${item.codigo} ${item.ciclo ? '- Ciclo: ' + item.ciclo : ''}</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="input-group input-group-sm" style="width: 90px; margin-right: 10px;">
+                                        <div class="input-group-prepend">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${index}, -1)">-</button>
+                                        </div>
+                                        <input type="text" class="form-control text-center px-0 bg-white" value="${cantidad}" readonly>
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${index}, 1)">+</button>
+                                        </div>
+                                    </div>
+                                    <span class="font-weight-bold text-success" style="margin-right:10px; width: 60px; text-align: right;">$${subtotal.toLocaleString('es-CL')}</span>
+                                    <button class="btn btn-sm btn-outline-danger border-0" onclick="removeFromCart(${index})">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </li>
+                        `;
+                    });
+
+                    list.innerHTML = html;
+                    totalEl.textContent = total.toLocaleString('es-CL'); // Formato de miles
+                }
+            }
+
+            function animateCartBadge() {
+                const badge = document.getElementById('cartBadge');
+                badge.classList.remove('animate__animated', 'animate__bounceIn');
+                void badge.offsetWidth; // trigger reflow
+                badge.classList.add('animate__animated', 'animate__bounceIn');
+            }
+
+            function sendWhatsAppOrder() {
+                if (cart.length === 0) return;
+
+                let message = '🌿 *¡Hola Solnatura!* Me gustaría realizar el siguiente pedido por favor:\n\n';
+                let total = 0;
+
+                cart.forEach((item, index) => {
+                    const cantidad = item.cantidad || 1;
+                    const subtotal = parseFloat(item.precio) * cantidad;
+                    total += subtotal;
+
+                    message += `*${index + 1}.* ${item.title} (Cód: ${item.codigo})\n`;
+                    if (cantidad > 1) {
+                        message += `   ${cantidad}x $${parseFloat(item.precio).toLocaleString('es-CL')} = $${subtotal.toLocaleString('es-CL')}\n`;
+                    } else {
+                        message += `   Valor: $${subtotal.toLocaleString('es-CL')}\n`;
+                    }
+                });
+
+                message += `\n*Total estimado:* $${total.toLocaleString('es-CL')}\n\n`;
+                message += 'Quedo atento/a para coordinar. ¡Gracias!';
+
+                const whatsappUrl = 'https://api.whatsapp.com/send?phone=56992513285&text=' + encodeURIComponent(message);
+                window.open(whatsappUrl, '_blank');
+
+                // Clear cart and close modal AFTER a small delay to ensure window opens
+                setTimeout(() => {
+                    cart = [];
+                    saveCart();
+                    renderCart();
+                    $('#cartModal').modal('hide');
+                }, 500);
+            }
+
+            // --- Lógica del Modal Info Producto (Actualizada) ---
+            $(document).ready(function () {
+                // Initialize cart on load
+                renderCart();
+
+                $('#productModal').on('show.bs.modal', function (event) {
+                    var button = $(event.relatedTarget);
                     var title = button.data('title');
                     var description = button.data('description');
                     var precio = button.data('precio');
@@ -159,8 +345,16 @@
                     modal.find('#modalProductCode').text(codigo);
                     modal.find('#modalProductImage').attr('src', imagePath);
 
-                    var whatsappUrl = 'https://api.whatsapp.com/send?phone=56992513285&text=Hola,%20Me%20interesa%20este%20producto,%20' + encodeURIComponent(title + ' ' + codigo + '-' + ciclo + ' - $' + precio);
-                    modal.find('#modalWhatsappBtn').attr('href', whatsappUrl);
+                    // Actualizar botón de añadir al carrito del modal
+                    const addBtn = document.getElementById('modalAddCartBtn');
+                    // Remover listeners antiguos clonando el nodo
+                    const newBtn = addBtn.cloneNode(true);
+                    addBtn.parentNode.replaceChild(newBtn, addBtn);
+
+                    newBtn.addEventListener('click', function () {
+                        addToCart(title, codigo, ciclo, precio);
+                        $('#productModal').modal('hide'); // Opcional: cerrar modal tras añadir
+                    });
                 });
             });
         </script>

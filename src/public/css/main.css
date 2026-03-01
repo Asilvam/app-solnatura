@@ -436,3 +436,43 @@ h6 {
         text-align: center;
     }
 }
+
+/* =============================================
+   CARRITO FLOTANTE
+   ============================================= */
+.floating-cart {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--verde-principal), var(--verde-oscuro));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 1050;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.floating-cart:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 25px rgba(120, 194, 173, 0.4) !important;
+}
+
+.cart-badge {
+    top: -5px;
+    right: -5px;
+    font-size: 0.8rem;
+    padding: 0.4em 0.6em;
+    border: 2px solid white;
+    background-color: #e74c3c;
+}
+
+/* Scroll personalizado para el modal del carrito */
+#cartItemsList {
+    max-height: 50vh;
+    overflow-y: auto;
+}
