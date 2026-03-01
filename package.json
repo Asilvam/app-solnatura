@@ -1,6 +1,6 @@
 {
   "name": "nodejs-solnatura",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,17 +12,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cloudinary": "^1.32.0",
+    "cloudinary": "^2.9.0",
+    "dotenv": "^17.3.1",
     "ejs": "^3.1.8",
     "express": "^4.18.2",
     "fs-extra": "^7.0.1",
     "mongoose": "^6.8.0",
     "morgan": "^1.10.0",
-    "multer": "^1.4.4",
+    "multer": "^2.1.0",
     "uuidv4": "^6.2.13"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20",
+    "nodemon": "^3.1.14",
     "sonar-scanner": "^3.1.0"
   }
 }

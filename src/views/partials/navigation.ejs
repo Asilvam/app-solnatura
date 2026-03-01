@@ -1,78 +1,66 @@
-<nav class="navbar navbar-expand-md navbar-light bg-light">
+<nav class="navbar navbar-expand-md navbar-light navbar-premium sticky-top" id="mainNav">
     <a class="navbar-brand" href="/">
-        <img
-                src="/img/logo.png"
-                style="height: 30px"
-                class="d-inline-block align-top"
-        />
-        NATURA SOL
+        <i class="fa-solid fa-leaf navbar-brand-icon"></i>
+        <span class="navbar-brand-text">Solnatura</span>
     </a>
-    <button
-            class="navbar-toggler"
-            type="button"
-            data-toggle="collapse"
-            data-target="#navbarNav"
-            aria-controls="navbarNav"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-    >
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav mr-auto">
             <li class="nav-item dropdown">
-                <a
-                        class="nav-link dropdown-toggle"
-                        href="/"
-                        id="navbarDropdownMenuLink"
-                        role="button"
-                        data-toggle="dropdown"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                >
-                    Categorias
+                <a class="nav-link dropdown-toggle font-weight-600" href="/" id="navbarDropdownMenuLink" role="button"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa-solid fa-tags"></i> Categorías
                 </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <div class="dropdown-menu dropdown-menu-premium" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item dropdown-item-all" href="/">
+                        <i class="fa-solid fa-border-all"></i> Todos los productos
+                    </a>
+                    <div class="dropdown-divider"></div>
                     <% categorias.forEach(function (categoria) { %>
-                        <a class="dropdown-item" href="/cat/<%= categoria.codigo %>"
-                        ><%= categoria.nombre %></a
-                        >
-                    <% }) %>
+                        <a class="dropdown-item" href="/cat/<%= categoria.codigo %>">
+                            <i class="fa-solid fa-circle-dot text-success small"></i>
+                            <%= categoria.nombre %>
+                        </a>
+                        <% }) %>
                 </div>
             </li>
         </ul>
-        <form
-                class="form-inline my-2 my-lg-0"
-                action="/search_pub"
-                method="post"
-                enctype="multipart/form-data"
-        >
-            <input
-                    class="form-control mr-sm-2"
-                    type="search"
-                    name="buscar"
-                    placeholder="Buscar Producto"
-                    aria-label="Search"
-            />
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
-                Buscar
-            </button>
+        <form class="form-inline my-2 my-lg-0 search-form" action="/search_pub" method="post"
+            enctype="multipart/form-data">
+            <div class="input-group search-group">
+                <input class="form-control search-input" type="search" name="buscar" placeholder="Buscar producto..."
+                    aria-label="Search" />
+                <div class="input-group-append">
+                    <button class="btn btn-search" type="submit">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 </nav>
 
-<script
-        src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
-        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-        crossorigin="anonymous"
-></script>
-<script
-        src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-        crossorigin="anonymous"
-></script>
-<script
-        src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
-        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
-        crossorigin="anonymous"
-></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+    crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+    integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+    crossorigin="anonymous"></script>
+
+<script>
+    // Sombra al hacer scroll
+    window.addEventListener('scroll', function () {
+        const nav = document.getElementById('mainNav');
+        if (window.scrollY > 10) {
+            nav.classList.add('scrolled');
+        } else {
+            nav.classList.remove('scrolled');
+        }
+    });
+</script>

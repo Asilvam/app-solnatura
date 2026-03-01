@@ -1,152 +1,200 @@
-const {Router} = require("express");
-const {unlink} = require("fs-extra");
+const { Router } = require("express");
+const { unlink } = require("fs-extra");
 const router = Router();
 
 const cloudinary = require("cloudinary");
 cloudinary.config({
-    cloud_name: "dujg9sojg",
-    api_key: "523798586227781",
-    api_secret: "2iJczEt0gmTbLlaADGa9LVTj6fw",
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Models
 const Image = require("../models/Image");
 const Categoria = require("../models/Categoria");
 
-router.get("/", async (req, res) => {
-    const images = await Image.find({estado: true});
-    const categorias = await Categoria.find({estado: true});
-    res.render("index2", {images, categorias});
+router.get("/", async (req, res, next) => {
+    try {
+        const images = await Image.find({ estado: true });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index2", { images, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar el catálogo de imágenes.";
+        next(err);
+    }
 });
 
-router.get("/cat/:id", async (req, res) => {
-    const {id} = req.params;
-    const images = await Image.find({estado: true, categoria: id});
-    const categorias = await Categoria.find({estado: true});
-    res.render("index2", {images, categorias});
+router.get("/cat/:id", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const images = await Image.find({ estado: true, categoria: id });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index2", { images, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar la categoría solicitada. Verifica que el ID sea válido.";
+        next(err);
+    }
 });
 
-router.get("/modecat", async (req, res) => {
-    const categorias = await Categoria.find();
-    res.render("cat", {categorias});
+router.get("/modecat", async (req, res, next) => {
+    try {
+        const categorias = await Categoria.find();
+        res.render("cat", { categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar el panel de categorías.";
+        next(err);
+    }
 });
 
-router.post("/modecat", async (req, res) => {
-    const categoria = new Categoria();
-    // console.log(req.body);
-    categoria.nombre = req.body.nombre;
-    categoria.codigo = req.body.codigo;
-    await categoria.save();
-    res.redirect("/modecat");
+router.post("/modecat", async (req, res, next) => {
+    try {
+        const categoria = new Categoria();
+        categoria.nombre = req.body.nombre;
+        categoria.codigo = req.body.codigo;
+        await categoria.save();
+        res.redirect("/modecat");
+    } catch (err) {
+        err.userMessage = "Error al crear la categoría. Verifica que el código y nombre sean correctos.";
+        next(err);
+    }
 });
 
-router.get("/mode", async (req, res) => {
-    const images = await Image.find();
-    const categorias = await Categoria.find({estado: true});
-    res.render("index", {images, categorias});
+router.get("/mode", async (req, res, next) => {
+    try {
+        const images = await Image.find();
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index", { images, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar el panel de administración.";
+        next(err);
+    }
 });
 
 router.get("/update/:id", async (req, res, next) => {
-    const image = await Image.findById(req.params.id);
-    const categorias = await Categoria.find({estado: true});
-    // console.log(image)
-    res.render("update", {image, categorias});
+    try {
+        const image = await Image.findById(req.params.id);
+        const categorias = await Categoria.find({ estado: true });
+        res.render("update", { image, categorias });
+    } catch (err) {
+        err.userMessage = "No se encontró la imagen a editar. Puede que haya sido eliminada.";
+        next(err);
+    }
 });
 
 router.post("/update/:id", async (req, res, next) => {
-    const {id} = req.params;
-
-    if (req.body.estado == null) {
-        // console.log('Object missing');
-        req.body.estado = false;
+    try {
+        const { id } = req.params;
+        if (req.body.estado == null) {
+            req.body.estado = false;
+        }
+        await Image.updateOne({ _id: id }, req.body);
+        res.redirect("/mode");
+    } catch (err) {
+        err.userMessage = "Error al actualizar la imagen. Verifica los datos e intenta nuevamente.";
+        next(err);
     }
-    await Image.updateOne({_id: id}, req.body);
-    res.redirect("/mode");
 });
 
-router.get("/upload", async (req, res) => {
-    const categorias = await Categoria.find({estado: true});
-    res.render("upload", {categorias});
+router.get("/upload", async (req, res, next) => {
+    try {
+        const categorias = await Categoria.find({ estado: true });
+        res.render("upload", { categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar el formulario de subida.";
+        next(err);
+    }
 });
 
-router.post("/upload", async (req, res) => {
-    const image = new Image();
-    const result = await cloudinary.v2.uploader.upload(req.file.path);
-    // console.log(req.body);
-    image.title = req.body.title;
-    image.precio = req.body.precio;
-    image.cantidad = req.body.cantidad;
-    image.codigo = req.body.codigo;
-    image.ciclo = req.body.ciclo;
-    image.description = req.body.description;
-    image.categoria = req.body.categoria;
-    image.filename = req.file.filename;
-    //image.path = '/img/uploads/' + req.file.filename;
-    image.path = result.secure_url;
-    image.public_id = result.public_id;
-    //image.estado = req.body.estado;
-    image.originalname = req.file.originalname;
-    image.mimetype = req.file.mimetype;
-    image.size = req.file.size;
-    //console.log(result);
-    await image.save();
-    await unlink(req.file.path);
-    //res.redirect('/');
-    res.redirect("/upload");
+router.post("/upload", async (req, res, next) => {
+    try {
+        const image = new Image();
+        const result = await cloudinary.v2.uploader.upload(req.file.path);
+        image.title = req.body.title;
+        image.precio = req.body.precio;
+        image.cantidad = req.body.cantidad;
+        image.codigo = req.body.codigo;
+        image.ciclo = req.body.ciclo;
+        image.description = req.body.description;
+        image.categoria = req.body.categoria;
+        image.filename = req.file.filename;
+        image.path = result.secure_url;
+        image.public_id = result.public_id;
+        image.originalname = req.file.originalname;
+        image.mimetype = req.file.mimetype;
+        image.size = req.file.size;
+        await image.save();
+        await unlink(req.file.path);
+        res.redirect("/upload");
+    } catch (err) {
+        err.userMessage = "Error al subir la imagen. Verifica el archivo y tu conexión a Cloudinary.";
+        next(err);
+    }
 });
 
-router.get("/image/:id", async (req, res) => {
-    const {id} = req.params;
-    const image = await Image.findById(id);
-    const categorias = await Categoria.find({estado: true});
-    res.render("profile", {image, categorias});
+router.get("/image/:id", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const image = await Image.findById(id);
+        const categorias = await Categoria.find({ estado: true });
+        res.render("profile", { image, categorias });
+    } catch (err) {
+        err.userMessage = "No se encontró la imagen solicitada.";
+        next(err);
+    }
 });
 
 //Buscar privado
-router.post("/search", async (req, res) => {
-    var q = eval("/^.*" + req.body.buscar + ".*$/i");
-    const images = await Image.find({
-        title: q,
-        ///^.*hidr.*$/i
-    });
-    //console.log(req.body.buscar," ",q);
-    const categorias = await Categoria.find({estado: true});
-    res.render("index", {images, categorias});
+router.post("/search", async (req, res, next) => {
+    try {
+        const escaped = req.body.buscar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const q = new RegExp(`^.*${escaped}.*$`, 'i');
+        const images = await Image.find({ title: q });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index", { images, categorias });
+    } catch (err) {
+        err.userMessage = "Error al realizar la búsqueda. Intenta con otros términos.";
+        next(err);
+    }
 });
 
 //Buscar publico
-router.post("/search_pub", async (req, res) => {
-    var q = eval("/^.*" + req.body.buscar + ".*$/i");
-    const images = await Image.find({
-        title: q,
-        estado: true,
-        ///^.*hidr.*$/i
-    });
-    //console.log(req.body.buscar," ",q);
-    const categorias = await Categoria.find({estado: true});
-    res.render("index2", {images, categorias});
+router.post("/search_pub", async (req, res, next) => {
+    try {
+        const escaped = req.body.buscar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const q = new RegExp(`^.*${escaped}.*$`, 'i');
+        const images = await Image.find({ title: q, estado: true });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index2", { images, categorias });
+    } catch (err) {
+        err.userMessage = "Error al realizar la búsqueda pública. Intenta con otros términos.";
+        next(err);
+    }
 });
 
-router.get("/image/:id/delete", async (req, res) => {
-    const {id} = req.params;
-    const imageDeleted = await Image.findByIdAndDelete(id);
+router.get("/image/:id/delete", async (req, res, next) => {
     try {
+        const { id } = req.params;
+        const imageDeleted = await Image.findByIdAndDelete(id);
         const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id, { invalidate: true });
-        console.log("Cloudinary result:", result); // Should log { result: 'ok' } if successful
         if (result.result !== 'ok') {
             console.error("Failed to delete image from Cloudinary");
         }
-    } catch (error) {
-        console.error("Error deleting image from Cloudinary:", error);
+        res.redirect("/mode");
+    } catch (err) {
+        err.userMessage = "No se pudo eliminar la imagen. Puede que ya haya sido borrada o no exista en Cloudinary.";
+        next(err);
     }
-    res.redirect("/mode");
 });
 
-router.get("/categoria/:id/delete", async (req, res) => {
-    const {id} = req.params;
-    const catDeleted = await Categoria.findByIdAndDelete(id);
-    //console.log(result);
-    res.redirect("/modecat");
+router.get("/categoria/:id/delete", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        await Categoria.findByIdAndDelete(id);
+        res.redirect("/modecat");
+    } catch (err) {
+        err.userMessage = "No se pudo eliminar la categoría. Puede que ya no exista.";
+        next(err);
+    }
 });
 
 module.exports = router;
