@@ -1,38 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Detalle Producto</title>
     <%- include("partials/head") -%>
 </head>
 
 <body>
-<%- include("partials/navigation") %>
+    <%- include("partials/navigation") %>
 
-<div class="container p-4">
-    <div class="row">
-        <div class="col-md-4 offset-md-4">
-            <div class="card animated fadeInDown">
-                <img
-                        src="<%= image.path %>"
-                        class="card-img-top"
-                        alt="<%= image.filename %>"
-                />
-                <div class="card-body">
-                    <h5 class="card-title"><%= image.title %></h5>
-                    <p class="card-text"><%= image.description %></p>
-                    <a
-                            href="/image/<%= image._id %>/delete"
-                            class="btn btn-danger btn-block"
-                    >
-                        Borrar Producto
-                    </a>
+        <div class="container p-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-5 col-md-7">
+                    <div class="card shadow-sm border-0 animate__animated animate__fadeInDown"
+                        style="border-radius: 1.25rem; overflow: hidden;">
+                        <div class="card-img-wrapper" style="background-color: #f8f9fa; padding: 2rem;">
+                            <img src="<%= image.path %>" class="img-fluid rounded shadow-sm mx-auto d-block"
+                                alt="<%= image.title %>" style="max-height: 300px; object-fit: contain;" />
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h4 class="font-weight-800 text-dark mb-0">
+                                    <%= image.title %>
+                                </h4>
+                                <span class="badge badge-light px-3 py-2 rounded-pill font-weight-700"
+                                    style="color: var(--verde-oscuro);">$ <%= image.precio %></span>
+                            </div>
+
+                            <p class="text-muted small mb-4" style="line-height: 1.6;">
+                                <%= image.description %>
+                            </p>
+
+                            <div
+                                class="alert alert-warning border-0 rounded-pill small font-weight-700 text-center mb-4">
+                                <i class="fa-solid fa-triangle-exclamation mr-2"></i> ¿Estás seguro de borrar este
+                                producto?
+                            </div>
+
+                            <div class="row no-gutters gap-2">
+                                <div class="col-6 pr-1">
+                                    <a href="/mode" class="btn btn-light btn-block rounded-pill font-weight-700">
+                                        Cancelar
+                                    </a>
+                                </div>
+                                <div class="col-6 pl-1">
+                                    <a href="/image/<%= image._id %>/delete"
+                                        class="btn btn-danger btn-block rounded-pill font-weight-700 shadow-sm">
+                                        <i class="fa-solid fa-trash-can mr-2"></i> Borrar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 </body>
+
 </html>

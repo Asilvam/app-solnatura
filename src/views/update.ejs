@@ -1,144 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Producto Edicion</title>
     <%- include("partials/head") -%>
 </head>
 
 <body>
-<%- include("partials/navigation") %>
+    <%- include("partials/navigationM") %>
 
-<div class="container p-4">
-    <div class="row">
-        <div class="col-md-4 offset-md-4">
-            <div class="card">
-                <div class="card-header text-center">
-                    <h3>Producto Edicion</h3>
-                </div>
-                <div class="card-body">
-                    <img
-                            src="<%= image.path %>"
-                            class="card-img-top"
-                            alt="<%= image.filename %>"
-                    />
-                    <form
-                            action="/update/<%= image._id %>"
-                            method="post"
-                            enctype="multipart/form-data"
-                    >
-                        <div class="input-group mb-3">
-                            <div class="custom-file">
-                                <input
-                                        type="file"
-                                        name="image"
-                                        class="custom-file-input"
-                                        id="inputGroupFile02"
-                                        value="<%= image.path %>"
-                                        disabled
-                                />
-                                <label
-                                        class="custom-file-label"
-                                        for="inputGroupFile02"
-                                        aria-describedby="inputGroupFileAddon02"
-                                >No Modificable</label
-                                >
+        <div class="container p-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-6 col-md-8">
+                    <div class="card shadow-sm border-0" style="border-radius: 1.25rem; overflow: hidden;">
+                        <div class="card-header bg-primary text-white text-center py-4 border-0">
+                            <h3 class="font-weight-800 mb-0"><i class="fa-solid fa-pen-to-square mr-2"></i>Editar
+                                Producto</h3>
+                        </div>
+                        <div class="card-body p-4 p-md-5">
+
+                            <div class="text-center mb-4">
+                                <div
+                                    style="background-color: #f8f9fa; border-radius: 1rem; padding: 1rem; display: inline-block;">
+                                    <img src="<%= image.path %>" alt="<%= image.title %>"
+                                        class="img-fluid rounded shadow-sm"
+                                        style="max-height: 200px; object-fit: contain;" />
+                                </div>
+                                <p class="small text-muted mt-2">Imagen actual</p>
+                            </div>
+
+                            <form action="/update/<%= image._id %>" method="post" enctype="multipart/form-data">
+
+                                <div class="form-group mb-4">
+                                    <label class="small font-weight-700 text-muted text-uppercase mb-2">Cambiar Imagen
+                                        (Opcional)</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="image" class="custom-file-input" id="inputItemImg" />
+                                        <label class="custom-file-label rounded-pill" for="inputItemImg"
+                                            data-browse="Elegir">Seleccionar nueva foto...</label>
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">Si no seleccionas nada, se mantendrá la foto
+                                        actual.</small>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group mb-3">
+                                            <label class="small font-weight-700 text-muted text-uppercase">Nombre del
+                                                Producto</label>
+                                            <input type="text" name="title" value="<%= image.title %>"
+                                                placeholder="Ej: Crema Hidratante Tododia"
+                                                class="form-control rounded-pill px-3" required />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="small font-weight-700 text-muted text-uppercase">Stock</label>
+                                            <input type="number" name="cantidad" value="<%= image.cantidad %>"
+                                                class="form-control rounded-pill px-3" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="small font-weight-700 text-muted text-uppercase">Precio
+                                                Venta</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span
+                                                        class="input-group-text bg-white border-right-0 rounded-pill-left pl-3">$</span>
+                                                </div>
+                                                <input type="number" name="precio" value="<%= image.precio %>"
+                                                    class="form-control border-left-0 rounded-pill-right pr-3" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label
+                                                class="small font-weight-700 text-muted text-uppercase">Código</label>
+                                            <input type="text" name="codigo" value="<%= image.codigo %>"
+                                                class="form-control rounded-pill px-3" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="small font-weight-700 text-muted text-uppercase">Ciclo</label>
+                                            <input type="text" name="ciclo" value="<%= image.ciclo %>"
+                                                class="form-control rounded-pill px-3" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-4">
+                                    <label class="small font-weight-700 text-muted text-uppercase">Categoría</label>
+                                    <select name="categoria" class="form-control rounded-pill px-3">
+                                        <option value="<%= image.categoria %>" selected>
+                                            <%= image.categoria %>
+                                        </option>
+                                        <div class="dropdown-divider"></div>
+                                        <% categorias.forEach(function (categoria) { %>
+                                            <% if(categoria.codigo !==image.categoria) { %>
+                                                <option value="<%= categoria.codigo %>">
+                                                    <%= categoria.nombre %>
+                                                </option>
+                                                <% } %>
+                                                    <% }) %>
+                                    </select>
+                                </div>
+
+                                <div class="form-group mb-4">
+                                    <label class="small font-weight-700 text-muted text-uppercase">Descripción
+                                        Detallada</label>
+                                    <textarea name="description" class="form-control"
+                                        style="border-radius: 1rem; min-height: 120px;"><%= image.description %></textarea>
+                                </div>
+
+                                <div class="form-group mb-4 d-flex align-items-center">
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" name="estado" class="custom-control-input"
+                                            id="checkVigencia" value="true" checked />
+                                        <label
+                                            class="custom-control-label small font-weight-700 text-muted text-uppercase"
+                                            for="checkVigencia">Producto Vigente</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mt-4">
+                                    <button
+                                        class="btn btn-primary btn-block rounded-pill py-3 font-weight-800 shadow-sm">
+                                        <i class="fa-solid fa-arrows-rotate mr-2"></i> ACTUALIZAR DATOS
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="text-center mt-3">
+                                <a href="/mode" class="text-muted small font-weight-700 text-uppercase"
+                                    style="text-decoration: none;">
+                                    <i class="fa-solid fa-chevron-left mr-1"></i> Volver al panel
+                                </a>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <input
-                                    type="text"
-                                    name="title"
-                                    placeholder="Nombre"
-                                    class="form-control"
-                                    value="<%= image.title %>"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <input
-                                    type="number"
-                                    name="cantidad"
-                                    placeholder="Cantidad en Stock"
-                                    class="form-control"
-                                    value="<%= image.cantidad %>"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <input
-                                    type="number"
-                                    name="precio"
-                                    placeholder="Precio Venta"
-                                    class="form-control"
-                                    value="<%= image.precio %>"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <input
-                                    type="text"
-                                    name="codigo"
-                                    placeholder="Codigo"
-                                    class="form-control"
-                                    value="<%= image.codigo %>"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <input
-                                    type="text"
-                                    name="ciclo"
-                                    placeholder="Ciclo"
-                                    class="form-control"
-                                    value="<%= image.ciclo %>"
-                            />
-                        </div>
-                        <div class="form-group">
-                  <textarea
-                          name="description"
-                          placeholder="Descripcion"
-                          class="form-control"
-                  >
-<%= image.description %></textarea
-                  >
-                        </div>
-                        <div class="form-group">
-                            <select
-                                    name="categoria"
-                                    class="form-control"
-                                    id="FormControlSelect1"
-                            >
-                                <option value="<%= image.categoria %>">
-                                    <%= image.categoria %>
-                                </option>
-                                <% categorias.forEach(function (categoria) { %>
-
-                                    <option value="<%= categoria.codigo %>">
-                                        <%= categoria.nombre %>
-                                    </option>
-
-                                <% }) %>
-                            </select>
-                        </div>
-                        <div class="form-group form-check">
-                            <input
-                                    type="checkbox"
-                                    name="estado"
-                                    placeholder="Estado"
-                                    class="form-check-input"
-                                    value="true"
-                                    checked
-                            />
-                            Producto Vigente
-                        </div>
-
-                        <div class="form-group">
-                            <button class="btn btn-success btn-block">Actualizar</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+
+        <style>
+            .rounded-pill-left {
+                border-top-left-radius: 50rem;
+                border-bottom-left-radius: 50rem;
+            }
+
+            .rounded-pill-right {
+                border-top-right-radius: 50rem;
+                border-bottom-right-radius: 50rem;
+            }
+
+            .custom-file-label::after {
+                border-top-right-radius: 50rem;
+                border-bottom-right-radius: 50rem;
+            }
+
+            .opacity-50 {
+                opacity: 0.6;
+            }
+        </style>
 </body>
+
 </html>

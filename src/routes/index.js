@@ -84,10 +84,34 @@ router.get("/update/:id", async (req, res, next) => {
 router.post("/update/:id", async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (req.body.estado == null) {
-            req.body.estado = false;
+        const updateData = { ...req.body };
+
+        if (updateData.estado == null) {
+            updateData.estado = false;
         }
-        await Image.updateOne({ _id: id }, req.body);
+
+        // Si hay una nueva imagen cargada
+        if (req.file) {
+            const oldImage = await Image.findById(id);
+            if (oldImage && oldImage.public_id) {
+                // Borrar imagen anterior de Cloudinary
+                await cloudinary.v2.uploader.destroy(oldImage.public_id);
+            }
+
+            // Subir nueva imagen
+            const result = await cloudinary.v2.uploader.upload(req.file.path);
+            updateData.path = result.secure_url;
+            updateData.public_id = result.public_id;
+            updateData.filename = req.file.filename;
+            updateData.originalname = req.file.originalname;
+            updateData.mimetype = req.file.mimetype;
+            updateData.size = req.file.size;
+
+            // Borrar archivo temporal local
+            await unlink(req.file.path);
+        }
+
+        await Image.updateOne({ _id: id }, updateData);
         res.redirect("/mode");
     } catch (err) {
         err.userMessage = "Error al actualizar la imagen. Verifica los datos e intenta nuevamente.";
