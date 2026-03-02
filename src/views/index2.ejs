@@ -41,8 +41,10 @@
                         data-description="<%= image.description %>" data-precio="<%= image.precio %>"
                         data-precio-anterior="<%= image.precioAnterior || 0 %>" data-stock="<%= image.cantidad %>"
                         data-codigo="<%= image.codigo %>" data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
-                        <div class="card-img-wrapper">
-                            <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>" />
+                        <div class="card-img-wrapper skeleton-loading">
+                            <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>"
+                                onload="this.parentElement.classList.remove('skeleton-loading'); this.style.opacity = 1;"
+                                style="opacity: 0; transition: opacity 0.3s ease-in-out;" loading="lazy" />
                         </div>
 
                         <div class="card-body d-flex flex-column">
