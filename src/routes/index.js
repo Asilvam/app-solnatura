@@ -102,6 +102,8 @@ router.post("/update/:id", async (req, res, next) => {
             updateData.estado = false;
         }
 
+        updateData.precioAnterior = updateData.precioAnterior || 0;
+
         // Si hay una nueva imagen cargada
         if (req.file) {
             const oldImage = await Image.findById(id);
@@ -147,6 +149,7 @@ router.post("/upload", async (req, res, next) => {
         const result = await cloudinary.v2.uploader.upload(req.file.path);
         image.title = req.body.title;
         image.precio = req.body.precio;
+        image.precioAnterior = req.body.precioAnterior || 0;
         image.cantidad = req.body.cantidad;
         image.codigo = req.body.codigo;
         image.ciclo = req.body.ciclo;

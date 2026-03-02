@@ -39,8 +39,8 @@
                     <div class="card animate__animated animate__fadeInUp" style="cursor: pointer;" data-toggle="modal"
                         data-target="#productModal" data-title="<%= image.title %>"
                         data-description="<%= image.description %>" data-precio="<%= image.precio %>"
-                        data-stock="<%= image.cantidad %>" data-codigo="<%= image.codigo %>"
-                        data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
+                        data-precio-anterior="<%= image.precioAnterior || 0 %>" data-stock="<%= image.cantidad %>"
+                        data-codigo="<%= image.codigo %>" data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
                         <div class="card-img-wrapper">
                             <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>" />
                         </div>
@@ -51,7 +51,20 @@
                             </h5>
 
                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="badge-precio">$ <%= image.precio %></span>
+                                <div>
+                                    <% if (image.precioAnterior && image.precioAnterior> image.precio) { %>
+                                        <span
+                                            style="color: #a0a0a0; text-decoration: line-through; font-size: 0.85rem; display: block; line-height: 1; margin-bottom: 2px;">$
+                                            <%= (image.precioAnterior || 0).toLocaleString('es-CL') %>
+                                        </span>
+                                        <% } %>
+                                            <span class="badge-precio" style="line-height: 1;">$ <%= (image.precio ||
+                                                    0).toLocaleString('es-CL') %></span>
+                                            <% if (image.precioAnterior && image.precioAnterior> image.precio) { %>
+                                                <span
+                                                    style="background-color: #ffe6e6; color: #d63031; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 5px; vertical-align: middle;">¡OFERTA!</span>
+                                                <% } %>
+                                </div>
                                 <span class="badge-stock">
                                     <i class="fa-solid fa-boxes-stacked"></i>
                                     Stock: <%= image.cantidad %>
@@ -105,7 +118,14 @@
                                 <h3 id="modalProductTitle" class="fw-bold mb-3" style="color: #2d3436;"></h3>
 
                                 <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
-                                    <span id="modalProductPrice" class="fs-4 fw-bold" style="color: #4a9a87;"></span>
+                                    <div>
+                                        <span id="modalProductOldPrice"
+                                            style="color: #a0a0a0; text-decoration: line-through; font-size: 1rem; display: none; line-height: 1; margin-bottom: 2px;"></span>
+                                        <span id="modalProductPrice" class="fs-4 fw-bold"
+                                            style="color: #4a9a87; line-height: 1;"></span>
+                                        <span id="modalOfferBadge"
+                                            style="background-color: #ffe6e6; color: #d63031; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; margin-left: 8px; vertical-align: middle; display: none;">¡OFERTA!</span>
+                                    </div>
                                     <span id="modalProductStock" class="badge rounded-pill px-3 py-2"
                                         style="background-color: #d4edda; color: #4a9a87; font-size: 0.9rem;">
                                         <i class="fa-solid fa-boxes-stacked me-1"></i> Stock: <span
@@ -332,6 +352,7 @@
                     var title = button.data('title');
                     var description = button.data('description');
                     var precio = button.data('precio');
+                    var precioAnterior = button.data('precio-anterior');
                     var stock = button.data('stock');
                     var codigo = button.data('codigo');
                     var ciclo = button.data('ciclo');
@@ -340,10 +361,21 @@
                     var modal = $(this);
                     modal.find('#modalProductTitle').text(title);
                     modal.find('#modalProductDescription').text(description);
-                    modal.find('#modalProductPrice').text('$ ' + precio);
+                    modal.find('#modalProductPrice').text('$ ' + (parseInt(precio) || 0).toLocaleString('es-CL'));
                     modal.find('#modalStockValue').text(stock);
                     modal.find('#modalProductCode').text(codigo);
                     modal.find('#modalProductImage').attr('src', imagePath);
+
+                    const oldPriceNum = parseInt(precioAnterior) || 0;
+                    const priceNum = parseInt(precio) || 0;
+
+                    if (oldPriceNum > priceNum) {
+                        modal.find('#modalProductOldPrice').text('$ ' + oldPriceNum.toLocaleString('es-CL')).show();
+                        modal.find('#modalOfferBadge').show();
+                    } else {
+                        modal.find('#modalProductOldPrice').hide();
+                        modal.find('#modalOfferBadge').hide();
+                    }
 
                     // Actualizar botón de añadir al carrito del modal
                     const addBtn = document.getElementById('modalAddCartBtn');
