@@ -15,7 +15,7 @@ const Categoria = require("../models/Categoria");
 
 router.get("/", async (req, res, next) => {
     try {
-        const images = await Image.find({ estado: true });
+        const images = await Image.find({ estado: true, cantidad: { $gt: 0 } });
         const categorias = await Categoria.find({ estado: true });
         res.render("index2", { images, categorias });
     } catch (err) {
