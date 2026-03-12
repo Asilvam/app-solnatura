@@ -12,6 +12,7 @@ cloudinary.config({
 // Models
 const Image = require("../models/Image");
 const Categoria = require("../models/Categoria");
+const Pedido = require("../models/Pedido");
 
 router.get("/", async (req, res, next) => {
     try {
@@ -299,6 +300,72 @@ router.post("/stock/:id", async (req, res, next) => {
         res.redirect("/mode");
     } catch (err) {
         err.userMessage = "Error al ajustar el stock del producto.";
+        next(err);
+    }
+});
+
+// ---------------------------------------------------------------
+// PEDIDOS (Orders)
+// ---------------------------------------------------------------
+
+// Public: create a new order from cart (JSON API)
+router.post("/pedido", async (req, res, next) => {
+    try {
+        const { items, total, nombre, telefono, notas } = req.body;
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: "El carrito está vacío." });
+        }
+
+        for (const item of items) {
+            if (!item.title || !item.codigo || !item.precio || !item.cantidad) {
+                return res.status(400).json({ error: "Datos de producto incompletos." });
+            }
+        }
+
+        const pedido = new Pedido({
+            items,
+            total: isFinite(parseFloat(total)) && parseFloat(total) >= 0 ? parseFloat(total) : 0,
+            nombre: nombre || "",
+            telefono: telefono || "",
+            notas: notas || "",
+        });
+
+        await pedido.save();
+        res.json({ ok: true, id: pedido._id });
+    } catch (err) {
+        err.userMessage = "No se pudo guardar el pedido.";
+        next(err);
+    }
+});
+
+// Admin: list all orders
+router.get("/mode/pedidos", async (req, res, next) => {
+    try {
+        const pedidos = await Pedido.find().sort({ createdAt: -1 });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("pedidos", { pedidos, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudieron cargar los pedidos.";
+        next(err);
+    }
+});
+
+// Admin: update order status
+router.post("/mode/pedidos/:id/estado", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+        const allowed = ["pendiente", "confirmado", "cancelado"];
+        if (!allowed.includes(estado)) {
+            const err = new Error("Estado inválido.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+        await Pedido.updateOne({ _id: id }, { estado });
+        res.redirect("/mode/pedidos");
+    } catch (err) {
+        err.userMessage = "No se pudo actualizar el estado del pedido.";
         next(err);
     }
 });

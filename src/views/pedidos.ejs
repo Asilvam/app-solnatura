@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Pedidos — Solnatura</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body>
+    <%- include("partials/navigationM") %>
+
+    <div class="container-fluid p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="font-weight-800 text-dark mb-0">
+                <i class="fa-solid fa-clipboard-list mr-2"></i> Pedidos
+            </h2>
+            <span class="badge badge-pill badge-secondary" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                <%= pedidos.length %> pedido<%= pedidos.length !== 1 ? 's' : '' %>
+            </span>
+        </div>
+
+        <% if (pedidos.length === 0) { %>
+        <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-inbox fa-4x mb-4" style="color: #dee2e6;"></i>
+            <h5>Aún no hay pedidos registrados.</h5>
+            <p class="small">Los pedidos aparecerán aquí cuando los clientes los envíen desde la tienda.</p>
+        </div>
+        <% } else { %>
+
+        <!-- Summary badges -->
+        <%
+            const pendientes  = pedidos.filter(p => p.estado === 'pendiente').length;
+            const confirmados = pedidos.filter(p => p.estado === 'confirmado').length;
+            const cancelados  = pedidos.filter(p => p.estado === 'cancelado').length;
+        %>
+        <div class="d-flex flex-wrap mb-4" style="gap: 0.75rem;">
+            <span class="badge badge-pill badge-warning px-3 py-2" style="font-size:0.9rem;">
+                <i class="fa-solid fa-clock mr-1"></i> Pendientes: <%= pendientes %>
+            </span>
+            <span class="badge badge-pill badge-success px-3 py-2" style="font-size:0.9rem;">
+                <i class="fa-solid fa-check-circle mr-1"></i> Confirmados: <%= confirmados %>
+            </span>
+            <span class="badge badge-pill badge-danger px-3 py-2" style="font-size:0.9rem;">
+                <i class="fa-solid fa-ban mr-1"></i> Cancelados: <%= cancelados %>
+            </span>
+        </div>
+
+        <!-- Orders table -->
+        <div class="card shadow-sm border-0" style="border-radius: 1rem; overflow: hidden;">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background-color: var(--verde-oscuro); color: white;">
+                        <tr>
+                            <th class="py-3 pl-4">Fecha</th>
+                            <th class="py-3">Cliente</th>
+                            <th class="py-3">Productos</th>
+                            <th class="py-3 text-right">Total</th>
+                            <th class="py-3 text-center">Estado</th>
+                            <th class="py-3 text-center pr-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% pedidos.forEach(function(pedido) { %>
+                        <tr>
+                            <td class="pl-4 align-middle text-muted small">
+                                <% const fecha = new Date(pedido.createdAt); %>
+                                <%= fecha.toLocaleDateString('es-CL') %><br/>
+                                <span style="font-size:0.75rem;"><%= fecha.toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'}) %></span>
+                            </td>
+                            <td class="align-middle">
+                                <% if (pedido.nombre) { %>
+                                    <strong class="d-block" style="font-size:0.9rem;"><%= pedido.nombre %></strong>
+                                <% } else { %>
+                                    <span class="text-muted small">Sin nombre</span>
+                                <% } %>
+                                <% if (pedido.telefono) { %>
+                                    <small class="text-muted"><i class="fa-solid fa-phone mr-1"></i><%= pedido.telefono %></small>
+                                <% } %>
+                            </td>
+                            <td class="align-middle">
+                                <% pedido.items.forEach(function(item) { %>
+                                    <div class="small" style="line-height:1.4;">
+                                        <span class="font-weight-700"><%= item.cantidad %>x</span>
+                                        <%= item.title %>
+                                        <span class="text-muted">(Cód: <%= item.codigo %>)</span>
+                                    </div>
+                                <% }); %>
+                                <% if (pedido.notas) { %>
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fa-solid fa-note-sticky mr-1"></i><%= pedido.notas %>
+                                    </small>
+                                <% } %>
+                            </td>
+                            <td class="align-middle text-right font-weight-800 pr-3" style="color: var(--verde-oscuro);">
+                                $<%= (pedido.total || 0).toLocaleString('es-CL') %>
+                            </td>
+                            <td class="align-middle text-center">
+                                <% if (pedido.estado === 'pendiente') { %>
+                                    <span class="badge badge-pill badge-warning px-3 py-1">
+                                        <i class="fa-solid fa-clock mr-1"></i> Pendiente
+                                    </span>
+                                <% } else if (pedido.estado === 'confirmado') { %>
+                                    <span class="badge badge-pill badge-success px-3 py-1">
+                                        <i class="fa-solid fa-check mr-1"></i> Confirmado
+                                    </span>
+                                <% } else { %>
+                                    <span class="badge badge-pill badge-danger px-3 py-1">
+                                        <i class="fa-solid fa-ban mr-1"></i> Cancelado
+                                    </span>
+                                <% } %>
+                            </td>
+                            <td class="align-middle text-center pr-4">
+                                <form action="/mode/pedidos/<%= pedido._id %>/estado" method="post"
+                                    class="d-flex align-items-center justify-content-center" style="gap: 0.5rem;">
+                                    <select name="estado" class="form-control form-control-sm rounded-pill px-3"
+                                        style="max-width: 140px; font-size: 0.8rem;">
+                                        <option value="pendiente"  <%= pedido.estado === 'pendiente'  ? 'selected' : '' %>>Pendiente</option>
+                                        <option value="confirmado" <%= pedido.estado === 'confirmado' ? 'selected' : '' %>>Confirmado</option>
+                                        <option value="cancelado"  <%= pedido.estado === 'cancelado'  ? 'selected' : '' %>>Cancelado</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm rounded-pill px-3"
+                                        style="background-color: var(--verde-oscuro); color: white; white-space: nowrap;">
+                                        <i class="fa-solid fa-floppy-disk"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <% } %>
+    </div>
+</body>
+
+</html>
