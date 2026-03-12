@@ -236,4 +236,71 @@ router.get("/categoria/:id/delete", async (req, res, next) => {
     }
 });
 
+// Stock management: show all products with low/zero stock
+router.get("/mode/stock", async (req, res, next) => {
+    try {
+        const images = await Image.find({ $or: [{ cantidad: { $lte: 5 } }, { cantidad: { $exists: false } }, { cantidad: null }] });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index", { images, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar la vista de stock bajo.";
+        next(err);
+    }
+});
+
+// Stock management: show adjustment form for a specific product
+router.get("/stock/:id", async (req, res, next) => {
+    try {
+        const image = await Image.findById(req.params.id);
+        if (!image) {
+            const err = new Error("Producto no encontrado.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+        const categorias = await Categoria.find({ estado: true });
+        res.render("stock", { image, categorias });
+    } catch (err) {
+        err.userMessage = "No se encontró el producto para ajustar su stock.";
+        next(err);
+    }
+});
+
+// Stock management: apply stock adjustment
+router.post("/stock/:id", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { operacion, cantidad } = req.body;
+        const ajuste = parseInt(cantidad, 10);
+
+        if (isNaN(ajuste) || ajuste < 0) {
+            const err = new Error("La cantidad debe ser un número válido mayor o igual a cero.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+
+        const product = await Image.findById(id);
+        if (!product) {
+            const err = new Error("Producto no encontrado.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+
+        let nuevoStock = product.cantidad || 0;
+        if (operacion === "agregar") {
+            nuevoStock += ajuste;
+        } else if (operacion === "restar") {
+            nuevoStock = Math.max(0, nuevoStock - ajuste);
+        } else {
+            // "establecer"
+            nuevoStock = ajuste;
+        }
+
+        await Image.updateOne({ _id: id }, { cantidad: nuevoStock });
+        res.redirect("/mode");
+    } catch (err) {
+        err.userMessage = "Error al ajustar el stock del producto.";
+        next(err);
+    }
+});
+
 module.exports = router;

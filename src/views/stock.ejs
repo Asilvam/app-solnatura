@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Ajustar Stock</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body>
+    <%- include("partials/navigationM") %>
+
+        <div class="container p-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-5 col-md-7">
+                    <div class="card shadow-sm border-0" style="border-radius: 1.25rem; overflow: hidden;">
+                        <div class="card-header text-white text-center py-4 border-0"
+                            style="background-color: var(--verde-oscuro);">
+                            <h3 class="font-weight-800 mb-0">
+                                <i class="fa-solid fa-boxes-stacked mr-2"></i>Ajustar Stock
+                            </h3>
+                        </div>
+                        <div class="card-body p-4 p-md-5">
+
+                            <!-- Product summary -->
+                            <div class="d-flex align-items-center mb-4 p-3"
+                                style="background-color: #f8f9fa; border-radius: 1rem;">
+                                <img src="<%= image.path %>" alt="<%= image.title %>"
+                                    style="width: 64px; height: 64px; object-fit: cover; border-radius: 0.75rem;"
+                                    class="mr-3 shadow-sm" />
+                                <div>
+                                    <h6 class="font-weight-800 mb-0 text-dark"><%= image.title %></h6>
+                                    <small class="text-muted">
+                                        <i class="fa-solid fa-barcode mr-1"></i><%= image.codigo %>
+                                    </small><br />
+                                    <span class="badge badge-pill mt-1"
+                                        style="background-color: <% if ((image.cantidad || 0) === 0) { %>
+                                            #dc3545<% } else if ((image.cantidad || 0) <= 5) { %>#ffc107<% } else { %>var(--verde-principal)<% } %>; color: white; font-size: 0.85rem;">
+                                        <i class="fa-solid fa-cubes mr-1"></i>
+                                        Stock actual: <%= image.cantidad || 0 %>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <form action="/stock/<%= image._id %>" method="post">
+
+                                <div class="form-group mb-4">
+                                    <label class="small font-weight-700 text-muted text-uppercase mb-2">
+                                        Tipo de Ajuste
+                                    </label>
+                                    <div class="d-flex gap-2" style="gap: 0.5rem;">
+                                        <div class="flex-fill">
+                                            <input type="radio" name="operacion" id="opAgregar" value="agregar"
+                                                class="d-none" checked />
+                                            <label for="opAgregar"
+                                                class="btn btn-outline-success btn-block rounded-pill font-weight-700 operacion-btn"
+                                                style="cursor: pointer;">
+                                                <i class="fa-solid fa-plus mr-1"></i> Agregar
+                                            </label>
+                                        </div>
+                                        <div class="flex-fill">
+                                            <input type="radio" name="operacion" id="opRestar" value="restar"
+                                                class="d-none" />
+                                            <label for="opRestar"
+                                                class="btn btn-outline-warning btn-block rounded-pill font-weight-700 operacion-btn"
+                                                style="cursor: pointer;">
+                                                <i class="fa-solid fa-minus mr-1"></i> Restar
+                                            </label>
+                                        </div>
+                                        <div class="flex-fill">
+                                            <input type="radio" name="operacion" id="opEstablecer" value="establecer"
+                                                class="d-none" />
+                                            <label for="opEstablecer"
+                                                class="btn btn-outline-secondary btn-block rounded-pill font-weight-700 operacion-btn"
+                                                style="cursor: pointer;">
+                                                <i class="fa-solid fa-pen mr-1"></i> Fijar
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <small id="operacionHelp" class="text-muted mt-2 d-block">
+                                        Se sumará la cantidad indicada al stock actual.
+                                    </small>
+                                </div>
+
+                                <div class="form-group mb-4">
+                                    <label class="small font-weight-700 text-muted text-uppercase">Cantidad</label>
+                                    <input type="number" name="cantidad" min="0" value="0"
+                                        class="form-control rounded-pill px-3 text-center font-weight-800"
+                                        style="font-size: 1.5rem;" required />
+                                </div>
+
+                                <div id="previewStock" class="alert alert-info rounded-pill text-center py-2 mb-4"
+                                    style="display: none;">
+                                    Nuevo stock estimado: <strong id="previewVal">–</strong>
+                                </div>
+
+                                <div class="form-group mt-4">
+                                    <button class="btn btn-block rounded-pill py-3 font-weight-800 shadow-sm"
+                                        style="background-color: var(--verde-oscuro); color: white;">
+                                        <i class="fa-solid fa-floppy-disk mr-2"></i> GUARDAR AJUSTE
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="text-center mt-3">
+                                <a href="/mode" class="text-muted small font-weight-700 text-uppercase"
+                                    style="text-decoration: none;">
+                                    <i class="fa-solid fa-chevron-left mr-1"></i> Volver al panel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const currentStock = <%= image.cantidad || 0 %>;
+            const cantidadInput = document.querySelector('input[name="cantidad"]');
+            const previewDiv = document.getElementById('previewStock');
+            const previewVal = document.getElementById('previewVal');
+            const operacionHelp = document.getElementById('operacionHelp');
+            const helpTexts = {
+                agregar: 'Se sumará la cantidad indicada al stock actual.',
+                restar: 'Se restará la cantidad indicada del stock actual (mínimo 0).',
+                establecer: 'El stock quedará exactamente en la cantidad indicada.'
+            };
+
+            function updatePreview() {
+                const op = document.querySelector('input[name="operacion"]:checked').value;
+                const val = parseInt(cantidadInput.value, 10);
+                operacionHelp.textContent = helpTexts[op];
+
+                if (!isNaN(val) && val >= 0) {
+                    let nuevo;
+                    if (op === 'agregar') nuevo = currentStock + val;
+                    else if (op === 'restar') nuevo = Math.max(0, currentStock - val);
+                    else nuevo = val;
+                    previewVal.textContent = nuevo;
+                    previewDiv.style.display = '';
+                } else {
+                    previewDiv.style.display = 'none';
+                }
+            }
+
+            function updateButtonStyles() {
+                const selected = document.querySelector('input[name="operacion"]:checked').value;
+                document.querySelectorAll('.operacion-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const selectedLabel = document.querySelector(`input[value="${selected}"] + label`);
+                if (selectedLabel) selectedLabel.classList.add('active');
+            }
+
+            document.querySelectorAll('input[name="operacion"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    updateButtonStyles();
+                    updatePreview();
+                });
+            });
+
+            cantidadInput.addEventListener('input', updatePreview);
+
+            // Initialize
+            updateButtonStyles();
+            updatePreview();
+        </script>
+</body>
+
+</html>
