@@ -240,7 +240,7 @@ router.get("/categoria/:id/delete", async (req, res, next) => {
 // Stock management: show all products with low/zero stock
 router.get("/mode/stock", async (req, res, next) => {
     try {
-        const images = await Image.find({ $or: [{ cantidad: { $lte: 5 } }, { cantidad: { $exists: false } }, { cantidad: null }] });
+        const images = await Image.find({ $or: [{ cantidad: { $lte: 0 } }, { cantidad: { $exists: false } }, { cantidad: null }] });
         const categorias = await Categoria.find({ estado: true });
         res.render("index", { images, categorias });
     } catch (err) {
