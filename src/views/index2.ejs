@@ -195,8 +195,54 @@
                         style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; justify-content: space-between;">
                         <div class="font-weight-bold text-dark fs-5">Total: $<span id="cartTotal">0</span></div>
                         <button type="button" id="btnSendOrder" class="btn btn-whatsapp rounded-pill px-4"
-                            onclick="sendWhatsAppOrder()">
+                            onclick="showOrderForm()">
                             <i class="fa-brands fa-whatsapp mr-1"></i> Pedir por WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Info Modal -->
+        <div class="modal fade" id="orderFormModal" tabindex="-1" aria-labelledby="orderFormModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+                <div class="modal-content" style="border-radius: 1rem; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title font-weight-bold" id="orderFormModalLabel">
+                            <i class="fa-brands fa-whatsapp mr-2" style="color: #25d366;"></i> Datos del pedido
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body px-4 pb-4">
+                        <div id="orderSaveWarning" class="alert alert-warning rounded-pill py-2 px-3 small mb-3"
+                            style="display: none;">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                            No se pudo registrar el pedido en el servidor, pero tu mensaje de WhatsApp fue enviado.
+                        </div>
+                        <p class="text-muted small mb-3">Opcional — nos ayuda a identificar tu pedido.</p>
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-700 text-muted text-uppercase">Nombre</label>
+                            <input type="text" id="orderNombre" class="form-control rounded-pill px-3"
+                                placeholder="Tu nombre (opcional)" />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-700 text-muted text-uppercase">Teléfono</label>
+                            <input type="tel" id="orderTelefono" class="form-control rounded-pill px-3"
+                                placeholder="Tu teléfono (opcional)" />
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="small font-weight-700 text-muted text-uppercase">Notas</label>
+                            <textarea id="orderNotas" class="form-control" rows="2"
+                                style="border-radius: 0.75rem;"
+                                placeholder="Comentarios o instrucciones de entrega (opcional)"></textarea>
+                        </div>
+                        <button type="button" id="btnConfirmOrder"
+                            class="btn btn-block rounded-pill py-3 font-weight-800"
+                            style="background-color: #25d366; color: white;"
+                            onclick="sendWhatsAppOrder()">
+                            <i class="fa-brands fa-whatsapp mr-2"></i> Confirmar y enviar por WhatsApp
                         </button>
                     </div>
                 </div>
@@ -310,17 +356,53 @@
                 badge.classList.add('animate__animated', 'animate__bounceIn');
             }
 
-            function sendWhatsAppOrder() {
+            function showOrderForm() {
+                if (cart.length === 0) return;
+                // Close cart modal and open customer info modal
+                $('#cartModal').modal('hide');
+                $('#orderFormModal').modal('show');
+            }
+
+            async function sendWhatsAppOrder() {
                 if (cart.length === 0) return;
 
-                let message = '🌿 *¡Hola Solnatura!* Me gustaría realizar el siguiente pedido por favor:\n\n';
+                const nombre   = (document.getElementById('orderNombre').value   || '').trim();
+                const telefono = (document.getElementById('orderTelefono').value || '').trim();
+                const notas    = (document.getElementById('orderNotas').value    || '').trim();
+
+                // Calculate total once and reuse for both backend and WhatsApp message
                 let total = 0;
+                cart.forEach(item => {
+                    total += parseFloat(item.precio) * (item.cantidad || 1);
+                });
+
+                // Save order to backend (non-blocking — if it fails, WhatsApp still opens)
+                let savedOk = false;
+                try {
+                    const resp = await fetch('/pedido', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ items: cart, total, nombre, telefono, notas }),
+                    });
+                    savedOk = resp.ok;
+                } catch (e) {
+                    console.warn('No se pudo guardar el pedido en el servidor:', e);
+                }
+
+                if (!savedOk) {
+                    const toast = document.getElementById('orderSaveWarning');
+                    if (toast) { toast.style.display = 'block'; setTimeout(() => { toast.style.display = 'none'; }, 5000); }
+                }
+
+                // Build WhatsApp message
+                let message = '🌿 *¡Hola Solnatura!* Me gustaría realizar el siguiente pedido por favor:\n\n';
+                if (nombre) message += `*Nombre:* ${nombre}\n`;
+                if (telefono) message += `*Teléfono:* ${telefono}\n`;
+                if (nombre || telefono) message += '\n';
 
                 cart.forEach((item, index) => {
                     const cantidad = item.cantidad || 1;
                     const subtotal = parseFloat(item.precio) * cantidad;
-                    total += subtotal;
-
                     message += `*${index + 1}.* ${item.title} (Cód: ${item.codigo})\n`;
                     if (cantidad > 1) {
                         message += `   ${cantidad}x $${parseFloat(item.precio).toLocaleString('es-CL')} = $${subtotal.toLocaleString('es-CL')}\n`;
@@ -329,18 +411,24 @@
                     }
                 });
 
-                message += `\n*Total estimado:* $${total.toLocaleString('es-CL')}\n\n`;
-                message += 'Quedo atento/a para coordinar. ¡Gracias!';
+                message += `\n*Total estimado:* $${total.toLocaleString('es-CL')}\n`;
+                if (notas) message += `\n*Notas:* ${notas}\n`;
+                message += '\nQuedo atento/a para coordinar. ¡Gracias!';
 
                 const whatsappUrl = 'https://api.whatsapp.com/send?phone=56992513285&text=' + encodeURIComponent(message);
                 window.open(whatsappUrl, '_blank');
 
-                // Clear cart and close modal AFTER a small delay to ensure window opens
+                // Clear form fields
+                document.getElementById('orderNombre').value   = '';
+                document.getElementById('orderTelefono').value = '';
+                document.getElementById('orderNotas').value    = '';
+
+                // Clear cart and close modal
                 setTimeout(() => {
                     cart = [];
                     saveCart();
                     renderCart();
-                    $('#cartModal').modal('hide');
+                    $('#orderFormModal').modal('hide');
                 }, 500);
             }
 

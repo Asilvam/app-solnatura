@@ -272,6 +272,16 @@ h6 {
     font-weight: 700;
 }
 
+.badge-stock-low {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-stock-empty {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
 /* --- Grid catálogo --- */
 .catalogo-grid {
     display: grid;

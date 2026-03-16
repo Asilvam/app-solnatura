@@ -15,10 +15,33 @@
         <div class="container-fluid p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="font-weight-800 text-dark mb-0">Gestión de Catálogo</h2>
-                <a href="/upload" class="btn btn-success rounded-pill px-4">
-                    <i class="fa-solid fa-plus mr-2"></i> Nuevo Producto
-                </a>
+                <div>
+                    <a href="/mode/stock" class="btn btn-warning rounded-pill px-4 mr-2">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> Stock Bajo
+                    </a>
+                    <a href="/upload" class="btn btn-success rounded-pill px-4">
+                        <i class="fa-solid fa-plus mr-2"></i> Nuevo Producto
+                    </a>
+                </div>
             </div>
+
+            <% const sinStock = images.filter(i => (i.cantidad || 0) === 0).length;
+               const stockBajo = images.filter(i => (i.cantidad || 0) > 0 && (i.cantidad || 0) <= 5).length;
+               if (sinStock > 0 || stockBajo > 0) { %>
+            <div class="alert rounded-pill d-flex align-items-center mb-4 py-2 px-4"
+                style="background-color: #fff3cd; border: 1px solid #ffc107;">
+                <i class="fa-solid fa-triangle-exclamation text-warning mr-3" style="font-size:1.2rem;"></i>
+                <span class="font-weight-700 text-dark">
+                    <% if (sinStock > 0) { %>
+                        <span class="badge badge-danger rounded-pill mr-2"><%= sinStock %> sin stock</span>
+                    <% } %>
+                    <% if (stockBajo > 0) { %>
+                        <span class="badge badge-warning rounded-pill mr-2"><%= stockBajo %> con stock bajo (≤5)</span>
+                    <% } %>
+                    — Usa el botón <strong>Stock</strong> en cada producto para ajustar.
+                </span>
+            </div>
+            <% } %>
 
             <div class="catalogo-grid">
                 <% images.forEach(function (image) { %>
@@ -39,9 +62,14 @@
 
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="badge-precio">$ <%= image.precio %></span>
-                                <span class="badge-stock">
+                                <span class="badge-stock <% if ((image.cantidad || 0) === 0) { %>badge-stock-empty<% } else if ((image.cantidad || 0) <= 5) { %>badge-stock-low<% } %>">
                                     <i class="fa-solid fa-boxes-stacked"></i>
-                                    <%= image.cantidad %>
+                                    <%= image.cantidad || 0 %>
+                                    <% if ((image.cantidad || 0) === 0) { %>
+                                        <i class="fa-solid fa-triangle-exclamation ml-1" title="Sin stock"></i>
+                                    <% } else if ((image.cantidad || 0) <= 5) { %>
+                                        <i class="fa-solid fa-circle-exclamation ml-1" title="Stock bajo"></i>
+                                    <% } %>
                                 </span>
                             </div>
 
@@ -58,13 +86,19 @@
                             </p>
 
                             <div class="row no-gutters gap-2 mt-auto">
-                                <div class="col-6 pr-1">
+                                <div class="col-4 pr-1">
                                     <a href="/update/<%= image._id %>"
                                         class="btn btn-outline-primary btn-block btn-sm rounded-pill">
                                         <i class="fa-solid fa-pen-to-square"></i> Editar
                                     </a>
                                 </div>
-                                <div class="col-6 pl-1">
+                                <div class="col-4 px-1">
+                                    <a href="/stock/<%= image._id %>"
+                                        class="btn btn-outline-success btn-block btn-sm rounded-pill">
+                                        <i class="fa-solid fa-boxes-stacked"></i> Stock
+                                    </a>
+                                </div>
+                                <div class="col-4 pl-1">
                                     <a href="/image/<%= image._id %>"
                                         class="btn btn-outline-danger btn-block btn-sm rounded-pill">
                                         <i class="fa-solid fa-trash-can"></i> Borrar
