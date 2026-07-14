@@ -30,6 +30,9 @@
                                 style="top: 10px; left: 10px; z-index: 2; border-radius: 20px; font-weight: 700; color: var(--verde-oscuro);">
                                 <%= image.categoria %>
                             </span>
+                            <% if (!image.estado) { %>
+                                <span class="badge-no-vigente-diagonal">No vigente</span>
+                            <% } %>
                         </div>
 
                         <div class="card-body d-flex flex-column">

@@ -205,6 +205,7 @@ h6 {
 
 /* Contenedor de imagen con aspect-ratio fijo */
 .card-img-wrapper {
+    position: relative;
     width: 100%;
     aspect-ratio: 4 / 3;
     background-color: #f0f4f2;
@@ -212,6 +213,26 @@ h6 {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.badge-no-vigente-diagonal {
+    position: absolute;
+    top: 24px;
+    right: -44px;
+    z-index: 3;
+    width: 180px;
+    padding: 0.45rem 0;
+    transform: rotate(45deg);
+    background-color: #dc3545;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    pointer-events: none;
 }
 
 .card-img-top {
