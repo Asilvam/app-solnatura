@@ -20,7 +20,7 @@
                     </a>
                     <div class="dropdown-divider"></div>
                     <% categorias.forEach(function (categoria) { %>
-                        <a class="dropdown-item" href="/cat/<%= categoria.codigo %>">
+                        <a class="dropdown-item" href="/?categoria=<%= encodeURIComponent(categoria.codigo) %>">
                             <i class="fa-solid fa-circle-dot text-success small"></i>
                             <%= categoria.nombre %>
                         </a>
@@ -28,18 +28,6 @@
                 </div>
             </li>
         </ul>
-        <form class="form-inline my-2 my-lg-0 search-form" action="/search_pub" method="post"
-            enctype="multipart/form-data">
-            <div class="input-group search-group">
-                <input class="form-control search-input" type="search" name="buscar" placeholder="Buscar producto..."
-                    aria-label="Search" />
-                <div class="input-group-append">
-                    <button class="btn btn-search" type="submit">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
-                </div>
-            </div>
-        </form>
     </div>
 </nav>
 

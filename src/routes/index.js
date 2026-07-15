@@ -17,10 +17,108 @@ const Image = require("../models/Image");
 const Categoria = require("../models/Categoria");
 const AuditLog = require("../models/AuditLog");
 
+const PUBLIC_PAGE_SIZE = 24;
 const MODE_PAGE_SIZE = 12;
 const LOW_STOCK_LIMIT = 5;
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const publicSortOptions = {
+    recientes: { created_at: -1, _id: -1 },
+    nombre_asc: { title: 1, _id: 1 },
+    nombre_desc: { title: -1, _id: -1 },
+    precio_asc: { precio: 1, _id: 1 },
+    precio_desc: { precio: -1, _id: -1 },
+};
+
+const normalizePublicPrice = (value) => {
+    if (typeof value !== "string" && typeof value !== "number") return "";
+
+    const normalized = String(value).trim().replace(",", ".");
+    if (!normalized) return "";
+
+    const price = Number(normalized);
+    return Number.isFinite(price) && price >= 0 ? price : "";
+};
+
+const normalizePublicFilters = (query) => {
+    const requestedPage = Number.parseInt(query.page, 10);
+    const orden = Object.prototype.hasOwnProperty.call(publicSortOptions, query.orden)
+        ? query.orden
+        : "recientes";
+    let precioMin = normalizePublicPrice(query.precioMin);
+    let precioMax = normalizePublicPrice(query.precioMax);
+
+    if (precioMin !== "" && precioMax !== "" && precioMin > precioMax) {
+        [precioMin, precioMax] = [precioMax, precioMin];
+    }
+
+    return {
+        q: typeof query.q === "string" ? query.q.trim().slice(0, 100) : "",
+        categoria: typeof query.categoria === "string"
+            ? query.categoria.trim().slice(0, 100)
+            : "",
+        oferta: query.oferta === "si" ? "si" : "",
+        precioMin,
+        precioMax,
+        orden,
+        page: Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+    };
+};
+
+const buildPublicImageFilter = (filters) => {
+    const filter = {
+        estado: true,
+        cantidad: { $gt: 0 },
+    };
+
+    if (filters.q) {
+        const q = new RegExp(escapeRegex(filters.q), "i");
+        filter.$or = [
+            { title: q },
+            { codigo: q },
+            { description: q },
+        ];
+    }
+
+    if (filters.categoria) {
+        filter.categoria = filters.categoria;
+    }
+
+    if (filters.precioMin !== "" || filters.precioMax !== "") {
+        filter.precio = {};
+        if (filters.precioMin !== "") filter.precio.$gte = filters.precioMin;
+        if (filters.precioMax !== "") filter.precio.$lte = filters.precioMax;
+    }
+
+    if (filters.oferta === "si") {
+        filter.$expr = {
+            $gt: [
+                { $ifNull: ["$precioAnterior", 0] },
+                { $ifNull: ["$precio", 0] },
+            ],
+        };
+    }
+
+    return filter;
+};
+
+const createPublicUrlBuilder = (filters) => (overrides = {}) => {
+    const values = { ...filters, ...overrides };
+    const params = new URLSearchParams();
+
+    ["q", "categoria", "oferta"].forEach((key) => {
+        if (values[key]) params.set(key, values[key]);
+    });
+
+    if (values.precioMin !== "") params.set("precioMin", values.precioMin);
+    if (values.precioMax !== "") params.set("precioMax", values.precioMax);
+    if (values.orden && values.orden !== "recientes") params.set("orden", values.orden);
+    if (Number(values.page) > 1) params.set("page", values.page);
+
+    const query = params.toString();
+    return query ? `/?${query}` : "/";
+};
 
 const modeSortOptions = {
     recientes: { created_at: -1, _id: -1 },
@@ -115,9 +213,40 @@ const createModeUrlBuilder = (filters) => (overrides = {}) => {
 
 router.get("/", async (req, res, next) => {
     try {
-        const images = await Image.find({ estado: true, cantidad: { $gt: 0 } });
-        const categorias = await Categoria.find({ estado: true });
-        res.render("index2", { images, categorias });
+        const filters = normalizePublicFilters(req.query);
+        const imageFilter = buildPublicImageFilter(filters);
+        const [total, categorias] = await Promise.all([
+            Image.countDocuments(imageFilter),
+            Categoria.find({ estado: true }).sort({ nombre: 1 }),
+        ]);
+        const totalPages = Math.max(Math.ceil(total / PUBLIC_PAGE_SIZE), 1);
+        const page = Math.min(filters.page, totalPages);
+        filters.page = page;
+        const publicUrl = createPublicUrlBuilder(filters);
+        const canonicalUrl = publicUrl();
+
+        if (req.originalUrl !== canonicalUrl) {
+            return res.redirect(canonicalUrl);
+        }
+
+        const images = await Image.find(imageFilter)
+            .sort(publicSortOptions[filters.orden])
+            .skip((page - 1) * PUBLIC_PAGE_SIZE)
+            .limit(PUBLIC_PAGE_SIZE);
+
+        res.render("index2", {
+            images,
+            categorias,
+            filters,
+            publicUrl,
+            currentPublicUrl: publicUrl({ page }),
+            pagination: {
+                page,
+                pageSize: PUBLIC_PAGE_SIZE,
+                total,
+                totalPages,
+            },
+        });
     } catch (err) {
         err.userMessage = "No se pudo cargar el catálogo de imágenes.";
         next(err);
@@ -126,10 +255,12 @@ router.get("/", async (req, res, next) => {
 
 router.get("/cat/:id", async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const images = await Image.find({ estado: true, categoria: id });
-        const categorias = await Categoria.find({ estado: true });
-        res.render("index2", { images, categorias });
+        const filters = normalizePublicFilters({
+            ...req.query,
+            categoria: req.params.id,
+            page: 1,
+        });
+        res.redirect(createPublicUrlBuilder(filters)());
     } catch (err) {
         err.userMessage = "No se pudo cargar la categoría solicitada. Verifica que el ID sea válido.";
         next(err);
@@ -444,13 +575,27 @@ router.post("/search", requireAdmin, requireCsrf, async (req, res, next) => {
 });
 
 //Buscar publico
-router.post("/search_pub", async (req, res, next) => {
+router.get("/search_pub", (req, res, next) => {
     try {
-        const escaped = req.body.buscar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const q = new RegExp(`^.*${escaped}.*$`, 'i');
-        const images = await Image.find({ title: q, estado: true });
-        const categorias = await Categoria.find({ estado: true });
-        res.render("index2", { images, categorias });
+        const filters = normalizePublicFilters({
+            ...req.query,
+            q: req.query.buscar || req.query.q,
+            page: 1,
+        });
+        res.redirect(createPublicUrlBuilder(filters)());
+    } catch (err) {
+        err.userMessage = "Error al realizar la búsqueda pública. Intenta con otros términos.";
+        next(err);
+    }
+});
+
+router.post("/search_pub", (req, res, next) => {
+    try {
+        const filters = normalizePublicFilters({
+            q: req.body.buscar,
+            page: 1,
+        });
+        res.redirect(303, createPublicUrlBuilder(filters)());
     } catch (err) {
         err.userMessage = "Error al realizar la búsqueda pública. Intenta con otros términos.";
         next(err);

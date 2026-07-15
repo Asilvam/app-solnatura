@@ -11,40 +11,202 @@
 
 <body>
     <%- include("partials/navigation") %>
+        <% const activeCategory = categorias.find((categoria) => categoria.codigo === filters.categoria); %>
+        <% const hasActiveFilters = Boolean(filters.q || filters.categoria || filters.oferta || filters.precioMin !== "" || filters.precioMax !== "" || filters.orden !== "recientes"); %>
+        <% const orderLabels = { nombre_asc: "Nombre A–Z", nombre_desc: "Nombre Z–A", precio_asc: "Precio menor", precio_desc: "Precio mayor" }; %>
+        <% const pageWindowSize = 5; %>
+        <% const pageStart = Math.max(1, Math.min(pagination.page - 2, pagination.totalPages - pageWindowSize + 1)); %>
+        <% const pageEnd = Math.min(pagination.totalPages, pageStart + pageWindowSize - 1); %>
 
         <!-- Hero Banner -->
-        <section class="hero-section">
+        <section class="hero-section <%= hasActiveFilters ? 'hero-section--compact' : '' %>">
             <div class="hero-overlay"></div>
             <div class="hero-content animate__animated animate__fadeIn">
                 <span class="hero-tagline">
-                    <i class="fa-solid fa-leaf"></i> Productos 100% natura
+                    <i class="fa-solid fa-leaf"></i> Belleza · Cuidado · Bienestar
                 </span>
-                <h1 class="hero-title">Bienvenido a <strong>Solnatura</strong></h1>
-                <p class="hero-subtitle">Descubre nuestra selección de productos natura, directamente para tu
-                    bienestar.</p>
-                <form class="hero-search-form" action="/search_pub" method="post" enctype="multipart/form-data">
+                <h1 class="hero-title">
+                    <span class="hero-title-desktop">Belleza y bienestar,<br><strong>elegidos para ti</strong></span>
+                    <span class="hero-title-mobile">Encuentra tu favorito</span>
+                </h1>
+                <p class="hero-subtitle">Explora una selección cuidada de productos para tu rutina, tu hogar y tus regalos.</p>
+                <form class="hero-search-form" action="/" method="get">
                     <div class="hero-search-group">
                         <i class="fa-solid fa-magnifying-glass hero-search-icon"></i>
-                        <input type="search" name="buscar" class="hero-search-input" placeholder="¿Qué producto buscas?"
-                            aria-label="Buscar" />
+                        <input type="search" name="q" class="hero-search-input" placeholder="¿Qué producto buscas?"
+                            value="<%= filters.q %>" aria-label="Buscar" />
                         <button type="submit" class="hero-search-btn">Buscar</button>
                     </div>
                 </form>
             </div>
         </section>
 
-        <div class="container p-4">
-            <div class="catalogo-grid">
+        <main id="catalogo" class="container public-catalog-page px-3 px-md-4 py-4">
+            <section class="public-catalog-header" aria-labelledby="catalog-title">
+                <div>
+                    <span class="public-catalog-eyebrow">Catálogo</span>
+                    <h2 id="catalog-title">Nuestros productos</h2>
+                    <p class="public-results-count mb-0">
+                        <strong><%= pagination.total %></strong>
+                        <%= pagination.total === 1 ? "producto encontrado" : "productos encontrados" %>
+                        <span class="public-results-page">· Página <%= pagination.page %> de <%= pagination.totalPages %></span>
+                    </p>
+                </div>
+                <button class="btn public-filter-toggle" type="button" data-toggle="collapse"
+                    data-target="#publicFilters" aria-expanded="false" aria-controls="publicFilters">
+                    <i class="fa-solid fa-sliders mr-1"></i> Filtros
+                    <% if (hasActiveFilters) { %>
+                        <span class="public-filter-dot" aria-label="Hay filtros activos"></span>
+                    <% } %>
+                </button>
+            </section>
+
+            <div class="collapse public-filter-collapse" id="publicFilters">
+                <form class="public-filter-card" action="/" method="get">
+                    <div class="public-filter-grid">
+                        <div class="public-filter-field public-filter-field--search">
+                            <label for="public-filter-q">Buscar</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                </div>
+                                <input id="public-filter-q" name="q" type="search" class="form-control"
+                                    value="<%= filters.q %>" placeholder="Nombre, código o descripción" />
+                            </div>
+                        </div>
+
+                        <div class="public-filter-field">
+                            <label for="public-filter-category">Categoría</label>
+                            <select id="public-filter-category" name="categoria" class="form-control">
+                                <option value="">Todas</option>
+                                <% categorias.forEach(function (categoria) { %>
+                                    <option value="<%= categoria.codigo %>" <%= filters.categoria === categoria.codigo ? "selected" : "" %>>
+                                        <%= categoria.nombre %>
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div class="public-filter-field">
+                            <label for="public-filter-min">Precio mínimo</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                <input id="public-filter-min" name="precioMin" type="number" min="0" step="1"
+                                    class="form-control" value="<%= filters.precioMin %>" placeholder="0" />
+                            </div>
+                        </div>
+
+                        <div class="public-filter-field">
+                            <label for="public-filter-max">Precio máximo</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                <input id="public-filter-max" name="precioMax" type="number" min="0" step="1"
+                                    class="form-control" value="<%= filters.precioMax %>" placeholder="Sin límite" />
+                            </div>
+                        </div>
+
+                        <div class="public-filter-field">
+                            <label for="public-filter-order">Ordenar por</label>
+                            <select id="public-filter-order" name="orden" class="form-control">
+                                <option value="recientes" <%= filters.orden === "recientes" ? "selected" : "" %>>Más recientes</option>
+                                <option value="nombre_asc" <%= filters.orden === "nombre_asc" ? "selected" : "" %>>Nombre A–Z</option>
+                                <option value="nombre_desc" <%= filters.orden === "nombre_desc" ? "selected" : "" %>>Nombre Z–A</option>
+                                <option value="precio_asc" <%= filters.orden === "precio_asc" ? "selected" : "" %>>Precio menor</option>
+                                <option value="precio_desc" <%= filters.orden === "precio_desc" ? "selected" : "" %>>Precio mayor</option>
+                            </select>
+                        </div>
+
+                        <div class="public-filter-field public-filter-field--offer">
+                            <label class="public-offer-check" for="public-filter-offer">
+                                <input id="public-filter-offer" name="oferta" type="checkbox" value="si"
+                                    <%= filters.oferta === "si" ? "checked" : "" %> />
+                                <span class="public-offer-check-box"><i class="fa-solid fa-tag"></i></span>
+                                <span>Solo ofertas</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="public-filter-actions">
+                        <a href="/" class="btn btn-light">Limpiar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-filter mr-1"></i> Aplicar filtros
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <% if (hasActiveFilters) { %>
+                <div class="public-active-filters" aria-label="Filtros activos">
+                    <span class="public-active-label">Filtros activos:</span>
+                    <% if (filters.q) { %>
+                        <a class="public-filter-chip" href="<%= publicUrl({ q: '', page: 1 }) %>"
+                            aria-label="Quitar búsqueda <%= filters.q %>">
+                            “<%= filters.q %>” <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    <% } %>
+                    <% if (filters.categoria) { %>
+                        <a class="public-filter-chip" href="<%= publicUrl({ categoria: '', page: 1 }) %>"
+                            aria-label="Quitar categoría">
+                            <%= activeCategory ? activeCategory.nombre : filters.categoria %>
+                            <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    <% } %>
+                    <% if (filters.oferta) { %>
+                        <a class="public-filter-chip" href="<%= publicUrl({ oferta: '', page: 1 }) %>"
+                            aria-label="Quitar filtro de ofertas">
+                            Solo ofertas <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    <% } %>
+                    <% if (filters.precioMin !== '' || filters.precioMax !== '') { %>
+                        <a class="public-filter-chip" href="<%= publicUrl({ precioMin: '', precioMax: '', page: 1 }) %>"
+                            aria-label="Quitar rango de precio">
+                            <% if (filters.precioMin !== '' && filters.precioMax !== '') { %>
+                                $<%= Number(filters.precioMin).toLocaleString('es-CL') %>–$<%= Number(filters.precioMax).toLocaleString('es-CL') %>
+                            <% } else if (filters.precioMin !== '') { %>
+                                Desde $<%= Number(filters.precioMin).toLocaleString('es-CL') %>
+                            <% } else { %>
+                                Hasta $<%= Number(filters.precioMax).toLocaleString('es-CL') %>
+                            <% } %>
+                            <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    <% } %>
+                    <% if (filters.orden !== 'recientes') { %>
+                        <a class="public-filter-chip" href="<%= publicUrl({ orden: 'recientes', page: 1 }) %>"
+                            aria-label="Restablecer orden">
+                            <%= orderLabels[filters.orden] %> <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    <% } %>
+                    <a class="public-clear-filters" href="/">Limpiar todo</a>
+                </div>
+            <% } %>
+
+            <% if (images.length === 0) { %>
+                <div class="public-empty-state">
+                    <span class="public-empty-icon"><i class="fa-solid fa-seedling"></i></span>
+                    <h3>No encontramos productos</h3>
+                    <p>Prueba con otra búsqueda o elimina algunos filtros para ampliar los resultados.</p>
+                    <a href="/" class="btn btn-primary rounded-pill px-4">Ver todos los productos</a>
+                </div>
+            <% } else { %>
+                <div class="catalogo-grid">
                 <% images.forEach(function (image) { %>
-                    <div class="card animate__animated animate__fadeInUp" style="cursor: pointer;" data-toggle="modal"
+                    <% const hasOffer = Number(image.precioAnterior) > Number(image.precio) && Number(image.precio) > 0; %>
+                    <% const discountPercentage = hasOffer ? Math.round((1 - Number(image.precio) / Number(image.precioAnterior)) * 100) : 0; %>
+                    <div class="card product-card animate__animated animate__fadeInUp" data-toggle="modal"
                         data-target="#productModal" data-title="<%= image.title %>"
                         data-description="<%= image.description %>" data-precio="<%= image.precio %>"
                         data-precio-anterior="<%= image.precioAnterior || 0 %>" data-stock="<%= image.cantidad %>"
                         data-codigo="<%= image.codigo %>" data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
                         <div class="card-img-wrapper skeleton-loading">
+                            <% if (hasOffer) { %>
+                                <span class="product-image-badge product-offer-badge">
+                                    <i class="fa-solid fa-tag"></i>
+                                    <strong>-<%= discountPercentage %>%</strong>
+                                    <span>Oferta</span>
+                                </span>
+                            <% } %>
                             <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>"
-                                onload="this.parentElement.classList.remove('skeleton-loading'); this.style.opacity = 1;"
-                                style="opacity: 0; transition: opacity 0.3s ease-in-out;" loading="lazy" />
+                                onload="this.parentElement.classList.remove('skeleton-loading');" loading="lazy" />
                         </div>
 
                         <div class="card-body d-flex flex-column">
@@ -52,25 +214,13 @@
                                 <%= image.title %>
                             </h5>
 
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <div>
-                                    <% if (image.precioAnterior && image.precioAnterior> image.precio) { %>
-                                        <span
-                                            style="color: #a0a0a0; text-decoration: line-through; font-size: 0.85rem; display: block; line-height: 1; margin-bottom: 2px;">$
-                                            <%= (image.precioAnterior || 0).toLocaleString('es-CL') %>
-                                        </span>
-                                        <% } %>
-                                            <span class="badge-precio" style="line-height: 1;">$ <%= (image.precio ||
-                                                    0).toLocaleString('es-CL') %></span>
-                                            <% if (image.precioAnterior && image.precioAnterior> image.precio) { %>
-                                                <span
-                                                    style="background-color: #ffe6e6; color: #d63031; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 5px; vertical-align: middle;">¡OFERTA!</span>
-                                                <% } %>
+                            <div class="product-price-row mb-2">
+                                <div class="product-price-block">
+                                    <% if (hasOffer) { %>
+                                        <span class="product-old-price">$ <%= Number(image.precioAnterior || 0).toLocaleString('es-CL') %></span>
+                                    <% } %>
+                                    <span class="badge-precio">$ <%= Number(image.precio || 0).toLocaleString('es-CL') %></span>
                                 </div>
-                                <span class="badge-stock">
-                                    <i class="fa-solid fa-boxes-stacked"></i>
-                                    Stock: <%= image.cantidad %>
-                                </span>
                             </div>
 
                             <p class="text-muted small mb-1">
@@ -78,28 +228,95 @@
                                 <%= image.codigo %>
                             </p>
 
-                            <p class="text-muted small mb-3"
-                                style="flex-grow:1; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical;">
+                            <p class="text-muted small mb-3 public-product-description">
                                 <%= image.description %>
                             </p>
 
                             <button type="button"
                                 onclick="event.stopPropagation(); addToCart('<%= image.title %>', '<%= image.codigo %>', '<%= image.ciclo %>', '<%= image.precio %>')"
-                                class="btn btn-whatsapp btn-block mt-auto">
+                                class="btn btn-add-cart btn-block mt-auto">
                                 <i class="fa-solid fa-cart-plus"></i>
                                 Añadir al carrito
                             </button>
                         </div>
                     </div>
                     <% }) %>
-            </div>
-        </div>
+                </div>
+
+                <% if (pagination.totalPages > 1) { %>
+                    <nav class="public-pagination" aria-label="Páginas del catálogo">
+                        <div class="public-pagination-desktop">
+                            <% if (pagination.page > 1) { %>
+                                <a class="public-page-link public-page-link--wide"
+                                    href="<%= publicUrl({ page: pagination.page - 1 }) %>#catalogo" rel="prev">
+                                    <i class="fa-solid fa-chevron-left"></i> Anterior
+                                </a>
+                            <% } else { %>
+                                <span class="public-page-link public-page-link--wide is-disabled" aria-disabled="true">
+                                    <i class="fa-solid fa-chevron-left"></i> Anterior
+                                </span>
+                            <% } %>
+
+                            <div class="public-page-numbers">
+                                <% for (let pageNumber = pageStart; pageNumber <= pageEnd; pageNumber += 1) { %>
+                                    <% if (pageNumber === pagination.page) { %>
+                                        <span class="public-page-link is-active" aria-current="page"><%= pageNumber %></span>
+                                    <% } else { %>
+                                        <a class="public-page-link" href="<%= publicUrl({ page: pageNumber }) %>#catalogo"
+                                            aria-label="Ir a la página <%= pageNumber %>"><%= pageNumber %></a>
+                                    <% } %>
+                                <% } %>
+                            </div>
+
+                            <% if (pagination.page < pagination.totalPages) { %>
+                                <a class="public-page-link public-page-link--wide"
+                                    href="<%= publicUrl({ page: pagination.page + 1 }) %>#catalogo" rel="next">
+                                    Siguiente <i class="fa-solid fa-chevron-right"></i>
+                                </a>
+                            <% } else { %>
+                                <span class="public-page-link public-page-link--wide is-disabled" aria-disabled="true">
+                                    Siguiente <i class="fa-solid fa-chevron-right"></i>
+                                </span>
+                            <% } %>
+                        </div>
+
+                        <div class="public-pagination-mobile">
+                            <% if (pagination.page > 1) { %>
+                                <a class="public-page-link public-page-link--mobile"
+                                    href="<%= publicUrl({ page: pagination.page - 1 }) %>#catalogo" rel="prev">
+                                    <i class="fa-solid fa-chevron-left"></i> Anterior
+                                </a>
+                            <% } else { %>
+                                <span class="public-page-link public-page-link--mobile is-disabled" aria-disabled="true">
+                                    <i class="fa-solid fa-chevron-left"></i> Anterior
+                                </span>
+                            <% } %>
+
+                            <span class="public-mobile-page-status">
+                                <small>Página</small>
+                                <strong><%= pagination.page %> de <%= pagination.totalPages %></strong>
+                            </span>
+
+                            <% if (pagination.page < pagination.totalPages) { %>
+                                <a class="public-page-link public-page-link--mobile"
+                                    href="<%= publicUrl({ page: pagination.page + 1 }) %>#catalogo" rel="next">
+                                    Siguiente <i class="fa-solid fa-chevron-right"></i>
+                                </a>
+                            <% } else { %>
+                                <span class="public-page-link public-page-link--mobile is-disabled" aria-disabled="true">
+                                    Siguiente <i class="fa-solid fa-chevron-right"></i>
+                                </span>
+                            <% } %>
+                        </div>
+                    </nav>
+                <% } %>
+            <% } %>
+        </main>
 
         <!-- Product Details Modal -->
         <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content"
-                    style="border-radius: 1rem; border: none; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div class="modal-content product-modal-content">
                     <div class="modal-header border-0 pb-0">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -109,37 +326,30 @@
                         <div class="row align-items-center">
                             <!-- Image Column -->
                             <div class="col-md-6 text-center mb-4 mb-md-0">
-                                <div
-                                    style="background-color: #f0f4f2; border-radius: 0.75rem; padding: 1.5rem; display: inline-block; width: 100%;">
-                                    <img id="modalProductImage" src="" alt="Product Image" class="img-fluid"
-                                        style="max-height: 350px; object-fit: contain;">
+                                <div class="product-modal-image-shell">
+                                    <img id="modalProductImage" src="" alt="Imagen del producto"
+                                        class="img-fluid product-modal-image">
                                 </div>
                             </div>
                             <!-- Details Column -->
                             <div class="col-md-6">
-                                <h3 id="modalProductTitle" class="fw-bold mb-3" style="color: #2d3436;"></h3>
+                                <h3 id="modalProductTitle" class="fw-bold mb-3 product-modal-title"></h3>
 
                                 <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-3">
                                     <div>
-                                        <span id="modalProductOldPrice"
-                                            style="color: #a0a0a0; text-decoration: line-through; font-size: 1rem; display: none; line-height: 1; margin-bottom: 2px;"></span>
-                                        <span id="modalProductPrice" class="fs-4 fw-bold"
-                                            style="color: #4a9a87; line-height: 1;"></span>
-                                        <span id="modalOfferBadge"
-                                            style="background-color: #ffe6e6; color: #d63031; padding: 3px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; margin-left: 8px; vertical-align: middle; display: none;">¡OFERTA!</span>
+                                        <span id="modalProductOldPrice" class="product-modal-old-price"></span>
+                                        <span id="modalProductPrice" class="fs-4 fw-bold product-modal-price"></span>
+                                        <span id="modalOfferBadge" class="product-modal-offer-badge"></span>
                                     </div>
-                                    <span id="modalProductStock" class="badge rounded-pill px-3 py-2"
-                                        style="background-color: #d4edda; color: #4a9a87; font-size: 0.9rem;">
+                                    <span id="modalProductStock" class="badge rounded-pill px-3 py-2 product-modal-stock">
                                         <i class="fa-solid fa-boxes-stacked me-1"></i> Stock: <span
                                             id="modalStockValue"></span>
                                     </span>
                                 </div>
 
                                 <div class="mb-4">
-                                    <h6 class="fw-bold text-muted text-uppercase"
-                                        style="font-size: 0.8rem; letter-spacing: 0.05em;">Descripción:</h6>
-                                    <p id="modalProductDescription"
-                                        style="line-height: 1.6; color: #636e72; font-size: 0.95rem; white-space: pre-line;">
+                                    <h6 class="fw-bold text-muted text-uppercase product-modal-section-label">Descripción:</h6>
+                                    <p id="modalProductDescription" class="product-modal-description">
                                     </p>
                                 </div>
 
@@ -149,7 +359,7 @@
                                 </p>
 
                                 <button id="modalAddCartBtn" type="button"
-                                    class="btn btn-whatsapp w-100 py-3 rounded-pill fw-bold fs-6">
+                                    class="btn btn-add-cart w-100 py-3 rounded-pill fw-bold fs-6">
                                     <i class="fa-solid fa-cart-plus fs-5 me-2 align-middle"></i>
                                     Añadir al carrito
                                 </button>
@@ -167,15 +377,21 @@
             <span id="cartBadge" class="badge badge-danger rounded-circle position-absolute cart-badge">0</span>
         </div>
 
+        <div id="cartToast" class="cart-toast" role="status" aria-live="polite" aria-atomic="true">
+            <span class="cart-toast-icon"><i class="fa-solid fa-check"></i></span>
+            <span class="cart-toast-copy">
+                <strong id="cartToastTitle">Agregado al carrito</strong>
+                <span id="cartToastProduct"></span>
+            </span>
+        </div>
+
         <!-- Cart Modal -->
         <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content"
-                    style="border-radius: 1rem; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
-                    <div class="modal-header bg-light"
-                        style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                <div class="modal-content cart-modal-content">
+                    <div class="modal-header bg-light cart-modal-header">
                         <h5 class="modal-title font-weight-bold" id="cartModalLabel">
-                            <i class="fa-solid fa-cart-shopping me-2" style="color: var(--verde-principal);"></i> Mi
+                            <i class="fa-solid fa-cart-shopping me-2 cart-modal-title-icon"></i> Mi
                             Carrito
                         </h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -184,15 +400,14 @@
                     </div>
                     <div class="modal-body p-0">
                         <div id="cartEmptyMessage" class="text-center p-5 text-muted">
-                            <i class="fa-solid fa-basket-shopping fa-3x mb-3" style="color: #dee2e6;"></i>
+                            <i class="fa-solid fa-basket-shopping fa-3x mb-3 cart-empty-icon"></i>
                             <p>Tu carrito está vacío.</p>
                         </div>
                         <ul id="cartItemsList" class="list-group list-group-flush">
                             <!-- Items se llenan con JS -->
                         </ul>
                     </div>
-                    <div class="modal-footer bg-light"
-                        style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; justify-content: space-between;">
+                    <div class="modal-footer bg-light cart-modal-footer">
                         <div class="font-weight-bold text-dark fs-5">Total: $<span id="cartTotal">0</span></div>
                         <button type="button" id="btnSendOrder" class="btn btn-whatsapp rounded-pill px-4"
                             onclick="sendWhatsAppOrder()">
@@ -206,12 +421,14 @@
         <script>
             // --- Lógica del Carrito ---
             let cart = JSON.parse(localStorage.getItem('solnatura_cart')) || [];
+            let cartToastTimer;
 
             function addToCart(title, codigo, ciclo, precio) {
                 // Check if product already exists
                 const existingItemIndex = cart.findIndex(item => item.codigo === codigo && item.ciclo === ciclo);
+                const quantityUpdated = existingItemIndex > -1;
 
-                if (existingItemIndex > -1) {
+                if (quantityUpdated) {
                     // Increase quantity if it exists
                     cart[existingItemIndex].cantidad = (cart[existingItemIndex].cantidad || 1) + 1;
                 } else {
@@ -222,6 +439,22 @@
                 saveCart();
                 renderCart();
                 animateCartBadge();
+                showCartConfirmation(title, quantityUpdated);
+            }
+
+            function showCartConfirmation(title, quantityUpdated) {
+                const toast = document.getElementById('cartToast');
+                const toastTitle = document.getElementById('cartToastTitle');
+                const toastProduct = document.getElementById('cartToastProduct');
+
+                toastTitle.textContent = quantityUpdated ? 'Cantidad actualizada' : 'Agregado al carrito';
+                toastProduct.textContent = title;
+                toast.classList.remove('is-visible');
+                void toast.offsetWidth;
+                toast.classList.add('is-visible');
+
+                clearTimeout(cartToastTimer);
+                cartToastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2600);
             }
 
             function removeFromCart(index) {
@@ -274,13 +507,13 @@
                         total += subtotal;
 
                         html += `
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div style="flex: 1;">
-                                    <h6 class="mb-0 text-dark font-weight-bold" style="font-size: 0.95rem;">${item.title}</h6>
+                            <li class="list-group-item d-flex justify-content-between align-items-center cart-item-row">
+                                <div class="cart-item-main">
+                                    <h6 class="mb-0 text-dark font-weight-bold cart-item-title">${item.title}</h6>
                                     <small class="text-muted">Cód: ${item.codigo} ${item.ciclo ? '- Ciclo: ' + item.ciclo : ''}</small>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="input-group input-group-sm" style="width: 90px; margin-right: 10px;">
+                                <div class="d-flex align-items-center cart-item-actions">
+                                    <div class="input-group input-group-sm cart-quantity-control">
                                         <div class="input-group-prepend">
                                             <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${index}, -1)">-</button>
                                         </div>
@@ -289,8 +522,8 @@
                                             <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${index}, 1)">+</button>
                                         </div>
                                     </div>
-                                    <span class="font-weight-bold text-success" style="margin-right:10px; width: 60px; text-align: right;">$${subtotal.toLocaleString('es-CL')}</span>
-                                    <button class="btn btn-sm btn-outline-danger border-0" onclick="removeFromCart(${index})">
+                                    <span class="font-weight-bold text-success cart-item-subtotal">$${subtotal.toLocaleString('es-CL')}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeFromCart(${index})">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </div>
@@ -367,13 +600,15 @@
                     modal.find('#modalStockValue').text(stock);
                     modal.find('#modalProductCode').text(codigo);
                     modal.find('#modalProductImage').attr('src', imagePath);
+                    modal.find('#modalProductImage').attr('alt', title);
 
                     const oldPriceNum = parseInt(precioAnterior) || 0;
                     const priceNum = parseInt(precio) || 0;
 
                     if (oldPriceNum > priceNum) {
+                        const discount = Math.round((1 - priceNum / oldPriceNum) * 100);
                         modal.find('#modalProductOldPrice').text('$ ' + oldPriceNum.toLocaleString('es-CL')).show();
-                        modal.find('#modalOfferBadge').show();
+                        modal.find('#modalOfferBadge').text('-' + discount + '%').show();
                     } else {
                         modal.find('#modalProductOldPrice').hide();
                         modal.find('#modalOfferBadge').hide();
