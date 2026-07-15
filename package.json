@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "admin:setup": "node scripts/setup-admin.js",
     "dev": "nodemon src",
     "start": "node src",
     "sonarqube": "sonar-scanner"

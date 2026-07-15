@@ -191,6 +191,100 @@ h6 {
 /* =============================================
    PANEL DE ADMINISTRACIÓN
    ============================================= */
+.admin-login-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(183, 228, 199, 0.7), transparent 38%),
+        linear-gradient(135deg, #f9f6f0 0%, #e8f5ef 100%);
+}
+
+.admin-login-shell {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.admin-login-card {
+    width: 100%;
+    max-width: 430px;
+    padding: 2.25rem;
+    border-radius: 1.25rem;
+    background-color: #fff;
+    box-shadow: 0 18px 55px rgba(45, 106, 79, 0.18);
+}
+
+.admin-login-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.admin-login-logo {
+    display: inline-flex;
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--verde-principal), var(--verde-oscuro));
+    color: #fff;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 20px rgba(74, 154, 135, 0.3);
+}
+
+.admin-login-brand h1 {
+    margin: 0;
+    color: #1b4332;
+    font-size: 1.65rem;
+    font-weight: 800;
+}
+
+.admin-login-brand p {
+    margin: 0.15rem 0 0;
+    color: var(--texto-suave);
+}
+
+.admin-login-card label {
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.admin-login-card .form-control,
+.admin-login-card .input-group-text {
+    height: 48px;
+    border-color: #dfe6e3;
+}
+
+.admin-login-card .input-group-text {
+    background-color: #f4f8f6;
+    color: var(--verde-oscuro);
+}
+
+.admin-login-back {
+    display: block;
+    margin-top: 1.5rem;
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.audit-table th {
+    border-top: none;
+    background-color: #f4f8f6;
+    color: var(--texto-suave);
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
 .admin-catalog-page {
     max-width: 1600px;
     margin: 0 auto;

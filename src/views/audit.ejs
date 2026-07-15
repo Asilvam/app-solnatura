@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Auditoría — Solnatura</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body>
+    <%- include("partials/navigationM") %>
+
+    <main class="container py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="font-weight-800 mb-1">Historial administrativo</h2>
+                <p class="text-muted mb-0">Últimos 100 accesos y cambios realizados en el catálogo.</p>
+            </div>
+            <a href="/mode" class="btn btn-outline-primary rounded-pill px-4 mt-2 mt-md-0">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Volver al catálogo
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 audit-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Administrador</th>
+                            <th>Acción</th>
+                            <th>Detalle</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (logs.length === 0) { %>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    Todavía no existen eventos de auditoría.
+                                </td>
+                            </tr>
+                        <% } %>
+                        <% logs.forEach(function (log) { %>
+                            <tr>
+                                <td class="text-nowrap"><%= new Date(log.createdAt).toLocaleString("es-CL") %></td>
+                                <td><strong><%= log.admin %></strong></td>
+                                <td><code><%= log.action %></code></td>
+                                <td><%= log.summary || "—" %></td>
+                                <td class="text-muted"><%= log.ip || "—" %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

@@ -33,6 +33,7 @@
                             </div>
 
                             <form action="/update/<%= image._id %>" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
                                 <div class="form-group mb-4">
                                     <label class="small font-weight-700 text-muted text-uppercase mb-2">Cambiar Imagen

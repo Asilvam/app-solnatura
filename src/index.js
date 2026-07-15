@@ -1,8 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
-const multer = require("multer");
-const { v4: uuidv4 } = require('uuid');
+const { loadAdminSession } = require("./middlewares/adminAuth");
 
 const path = require("path");
 
@@ -14,21 +13,14 @@ require("./database");
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.set("port", process.env.PORT || 3000);
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 // middlewares
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: false }));
-const storage = multer.diskStorage({
-  destination: path.join(__dirname, "public/img/uploads"),
-  filename: (req, file, cb, filename) => {
-    console.log(file);
-    cb(null, uuidv4() + path.extname(file.originalname));
-  },
-});
-app.use(multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-}).single("image"));
+app.use(loadAdminSession);
 
 // Global variables
 app.use((req, res, next) => {
@@ -36,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 // routes
+app.use(require("./routes/adminAuth"));
 app.use(require("./routes/index"));
 
 // static files
@@ -52,7 +45,7 @@ app.use((err, req, res, next) => {
     message = "La imagen es demasiado pesada. El límite máximo es de 10MB.";
   }
 
-  res.status(500).send(`
+  res.status(err.status || 500).send(`
     <div style="font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto; text-align: center;">
       <h2 style="color: #c0392b;">⚠️ Error de Subida</h2>
       <p style="color: #333; font-size: 1.1rem;">${message}</p>

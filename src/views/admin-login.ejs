@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Acceso administrativo — Solnatura</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body class="admin-login-page">
+    <main class="admin-login-shell">
+        <section class="admin-login-card">
+            <div class="admin-login-brand">
+                <span class="admin-login-logo"><i class="fa-solid fa-leaf"></i></span>
+                <div>
+                    <h1>Solnatura</h1>
+                    <p>Panel administrativo</p>
+                </div>
+            </div>
+
+            <% if (error) { %>
+                <div class="alert alert-danger" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i><%= error %>
+                </div>
+            <% } %>
+
+            <% if (!configured) { %>
+                <div class="alert alert-warning" role="alert">
+                    <strong>Configuración pendiente.</strong><br />
+                    Ejecuta <code>npm run admin:setup</code> en el proyecto y reinicia el servidor.
+                </div>
+            <% } %>
+
+            <form action="/admin/login" method="post" autocomplete="on">
+                <input type="hidden" name="_csrf" value="<%= loginCsrf %>" />
+                <input type="hidden" name="next" value="<%= nextPath %>" />
+
+                <div class="form-group">
+                    <label for="admin-username">Usuario</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        </div>
+                        <input id="admin-username" name="username" class="form-control" type="text"
+                            value="<%= username %>" autocomplete="username" required autofocus />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="admin-password">Contraseña</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                        </div>
+                        <input id="admin-password" name="password" class="form-control" type="password"
+                            autocomplete="current-password" required />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block rounded-pill py-3 mt-4"
+                    <%= configured ? "" : "disabled" %>>
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>Ingresar
+                </button>
+            </form>
+
+            <a href="/" class="admin-login-back"><i class="fa-solid fa-arrow-left mr-1"></i> Volver a la tienda</a>
+        </section>
+    </main>
+</body>
+
+</html>

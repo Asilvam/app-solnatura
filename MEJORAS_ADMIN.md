@@ -19,14 +19,14 @@ Este documento reúne las mejoras propuestas para administrar productos, categor
 
 Prioridad: crítica.
 
-- [ ] Incorporar inicio y cierre de sesión para administradores.
-- [ ] Proteger `/mode`, `/modecat`, `/upload`, `/update` y todas las acciones de modificación.
-- [ ] Guardar contraseñas con hash seguro; nunca en texto plano.
-- [ ] Agregar protección CSRF a formularios administrativos.
-- [ ] Cambiar eliminaciones que usan `GET` por `POST` o `DELETE`.
-- [ ] Incorporar limitación de intentos de inicio de sesión.
-- [ ] Configurar cookies `httpOnly`, `secure` y `sameSite` para producción.
-- [ ] Registrar quién realizó cada modificación.
+- [x] Incorporar inicio y cierre de sesión para administradores.
+- [x] Proteger `/mode`, `/modecat`, `/upload`, `/update` y todas las acciones de modificación.
+- [x] Guardar contraseñas con hash seguro; nunca en texto plano.
+- [x] Agregar protección CSRF a formularios administrativos.
+- [x] Cambiar eliminaciones que usan `GET` por `POST` o `DELETE`.
+- [x] Incorporar limitación de intentos de inicio de sesión.
+- [x] Configurar cookies `httpOnly`, `secure` y `sameSite` para producción.
+- [x] Registrar quién realizó cada modificación.
 
 Criterio de término: un visitante sin sesión no puede ver ni modificar información administrativa.
 

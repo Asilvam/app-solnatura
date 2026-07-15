@@ -23,6 +23,7 @@
                         </div>
                         <div class="card-body">
                             <form action="/modecat" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                                 <div class="form-group">
                                     <label class="small font-weight-700 text-muted">Código</label>
                                     <input type="text" name="codigo" placeholder="Ej: ROSTRO"
@@ -63,10 +64,13 @@
                                         <h5 class="font-weight-800 text-dark mb-4">
                                             <%= categoria.nombre %>
                                         </h5>
-                                        <a href="/categoria/<%= categoria._id %>/delete"
-                                            class="btn btn-outline-danger btn-sm btn-block rounded-pill">
-                                            <i class="fa-solid fa-trash-can mr-1"></i> Borrar
-                                        </a>
+                                        <form action="/categoria/<%= categoria._id %>/delete" method="post">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                            <button type="submit"
+                                                class="btn btn-outline-danger btn-sm btn-block rounded-pill">
+                                                <i class="fa-solid fa-trash-can mr-1"></i> Borrar
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

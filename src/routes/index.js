@@ -1,5 +1,8 @@
 const { Router } = require("express");
 const { unlink } = require("fs-extra");
+const { requireAdmin, requireCsrf } = require("../middlewares/adminAuth");
+const upload = require("../middlewares/upload");
+const recordAudit = require("../services/audit");
 const router = Router();
 
 const cloudinary = require("cloudinary");
@@ -12,6 +15,7 @@ cloudinary.config({
 // Models
 const Image = require("../models/Image");
 const Categoria = require("../models/Categoria");
+const AuditLog = require("../models/AuditLog");
 
 const MODE_PAGE_SIZE = 12;
 const LOW_STOCK_LIMIT = 5;
@@ -132,7 +136,7 @@ router.get("/cat/:id", async (req, res, next) => {
     }
 });
 
-router.get("/modecat", async (req, res, next) => {
+router.get("/modecat", requireAdmin, async (req, res, next) => {
     try {
         const categorias = await Categoria.find();
         res.render("cat", { categorias });
@@ -142,12 +146,19 @@ router.get("/modecat", async (req, res, next) => {
     }
 });
 
-router.post("/modecat", async (req, res, next) => {
+router.post("/modecat", requireAdmin, requireCsrf, async (req, res, next) => {
     try {
         const categoria = new Categoria();
         categoria.nombre = req.body.nombre;
         categoria.codigo = req.body.codigo;
         await categoria.save();
+        await recordAudit(req, {
+            action: "category.create",
+            entityType: "Categoria",
+            entityId: categoria._id,
+            summary: `Categoría creada: ${categoria.nombre}`,
+            metadata: { codigo: categoria.codigo },
+        });
         res.redirect("/modecat");
     } catch (err) {
         err.userMessage = "Error al crear la categoría. Verifica que el código y nombre sean correctos.";
@@ -155,7 +166,20 @@ router.post("/modecat", async (req, res, next) => {
     }
 });
 
-router.get("/mode", async (req, res, next) => {
+router.get("/mode/auditoria", requireAdmin, async (req, res, next) => {
+    try {
+        const [logs, categorias] = await Promise.all([
+            AuditLog.find().sort({ createdAt: -1 }).limit(100).lean(),
+            Categoria.find({ estado: true }).sort({ nombre: 1 }),
+        ]);
+        res.render("audit", { logs, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar el historial administrativo.";
+        next(err);
+    }
+});
+
+router.get("/mode", requireAdmin, async (req, res, next) => {
     try {
         const filters = normalizeModeFilters(req.query);
         const imageFilter = buildImageFilter(filters);
@@ -250,7 +274,7 @@ router.get("/mode", async (req, res, next) => {
     }
 });
 
-router.get("/mode/cat/:id", async (req, res, next) => {
+router.get("/mode/cat/:id", requireAdmin, async (req, res, next) => {
     try {
         res.redirect(`/mode?categoria=${encodeURIComponent(req.params.id)}`);
     } catch (err) {
@@ -259,14 +283,24 @@ router.get("/mode/cat/:id", async (req, res, next) => {
     }
 });
 
-router.post("/mode/:id/estado", async (req, res, next) => {
+router.post("/mode/:id/estado", requireAdmin, requireCsrf, async (req, res, next) => {
     try {
         if (!["true", "false"].includes(req.body.estado)) {
             return res.status(400).send("Estado de producto inválido.");
         }
 
-        await Image.findByIdAndUpdate(req.params.id, {
+        const image = await Image.findByIdAndUpdate(req.params.id, {
             estado: req.body.estado === "true",
+        }, { new: true });
+
+        if (!image) return res.status(404).send("Producto no encontrado.");
+
+        await recordAudit(req, {
+            action: "product.status",
+            entityType: "Image",
+            entityId: image._id,
+            summary: `${image.title}: ${image.estado ? "vigente" : "no vigente"}`,
+            metadata: { estado: image.estado },
         });
 
         const returnTo = typeof req.body.returnTo === "string" && /^\/mode(?:\?|$)/.test(req.body.returnTo)
@@ -279,7 +313,7 @@ router.post("/mode/:id/estado", async (req, res, next) => {
     }
 });
 
-router.get("/update/:id", async (req, res, next) => {
+router.get("/update/:id", requireAdmin, async (req, res, next) => {
     try {
         const image = await Image.findById(req.params.id);
         const categorias = await Categoria.find({ estado: true });
@@ -290,10 +324,10 @@ router.get("/update/:id", async (req, res, next) => {
     }
 });
 
-router.post("/update/:id", async (req, res, next) => {
+router.post("/update/:id", requireAdmin, upload.single("image"), requireCsrf, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const updateData = { ...req.body };
+        const { _csrf, ...updateData } = req.body;
 
         if (updateData.estado == null) {
             updateData.estado = false;
@@ -322,7 +356,19 @@ router.post("/update/:id", async (req, res, next) => {
             await unlink(req.file.path);
         }
 
-        await Image.updateOne({ _id: id }, updateData);
+        const image = await Image.findByIdAndUpdate(id, updateData, { new: true });
+        if (!image) return res.status(404).send("Producto no encontrado.");
+
+        await recordAudit(req, {
+            action: "product.update",
+            entityType: "Image",
+            entityId: image._id,
+            summary: `Producto actualizado: ${image.title}`,
+            metadata: {
+                codigo: image.codigo,
+                estado: image.estado,
+            },
+        });
         res.redirect("/mode");
     } catch (err) {
         err.userMessage = "Error al actualizar la imagen. Verifica los datos e intenta nuevamente.";
@@ -330,7 +376,7 @@ router.post("/update/:id", async (req, res, next) => {
     }
 });
 
-router.get("/upload", async (req, res, next) => {
+router.get("/upload", requireAdmin, async (req, res, next) => {
     try {
         const categorias = await Categoria.find({ estado: true });
         res.render("upload", { categorias });
@@ -340,7 +386,7 @@ router.get("/upload", async (req, res, next) => {
     }
 });
 
-router.post("/upload", async (req, res, next) => {
+router.post("/upload", requireAdmin, upload.single("image"), requireCsrf, async (req, res, next) => {
     try {
         const image = new Image();
         const result = await cloudinary.v2.uploader.upload(req.file.path);
@@ -360,6 +406,13 @@ router.post("/upload", async (req, res, next) => {
         image.size = req.file.size;
         await image.save();
         await unlink(req.file.path);
+        await recordAudit(req, {
+            action: "product.create",
+            entityType: "Image",
+            entityId: image._id,
+            summary: `Producto creado: ${image.title}`,
+            metadata: { codigo: image.codigo },
+        });
         res.redirect("/upload");
     } catch (err) {
         err.userMessage = "Error al subir la imagen. Verifica el archivo y tu conexión a Cloudinary.";
@@ -367,7 +420,7 @@ router.post("/upload", async (req, res, next) => {
     }
 });
 
-router.get("/image/:id", async (req, res, next) => {
+router.get("/image/:id", requireAdmin, async (req, res, next) => {
     try {
         const { id } = req.params;
         const image = await Image.findById(id);
@@ -380,7 +433,7 @@ router.get("/image/:id", async (req, res, next) => {
 });
 
 //Buscar privado
-router.post("/search", async (req, res, next) => {
+router.post("/search", requireAdmin, requireCsrf, async (req, res, next) => {
     try {
         const buscar = typeof req.body.buscar === "string" ? req.body.buscar.trim() : "";
         res.redirect(buscar ? `/mode?q=${encodeURIComponent(buscar)}` : "/mode");
@@ -404,14 +457,23 @@ router.post("/search_pub", async (req, res, next) => {
     }
 });
 
-router.get("/image/:id/delete", async (req, res, next) => {
+router.post("/image/:id/delete", requireAdmin, requireCsrf, async (req, res, next) => {
     try {
         const { id } = req.params;
         const imageDeleted = await Image.findByIdAndDelete(id);
+        if (!imageDeleted) return res.status(404).send("Producto no encontrado.");
+
         const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id, { invalidate: true });
         if (result.result !== 'ok') {
             console.error("Failed to delete image from Cloudinary");
         }
+        await recordAudit(req, {
+            action: "product.delete",
+            entityType: "Image",
+            entityId: imageDeleted._id,
+            summary: `Producto eliminado: ${imageDeleted.title}`,
+            metadata: { codigo: imageDeleted.codigo },
+        });
         res.redirect("/mode");
     } catch (err) {
         err.userMessage = "No se pudo eliminar la imagen. Puede que ya haya sido borrada o no exista en Cloudinary.";
@@ -419,10 +481,19 @@ router.get("/image/:id/delete", async (req, res, next) => {
     }
 });
 
-router.get("/categoria/:id/delete", async (req, res, next) => {
+router.post("/categoria/:id/delete", requireAdmin, requireCsrf, async (req, res, next) => {
     try {
         const { id } = req.params;
-        await Categoria.findByIdAndDelete(id);
+        const categoria = await Categoria.findByIdAndDelete(id);
+        if (!categoria) return res.status(404).send("Categoría no encontrada.");
+
+        await recordAudit(req, {
+            action: "category.delete",
+            entityType: "Categoria",
+            entityId: categoria._id,
+            summary: `Categoría eliminada: ${categoria.nombre}`,
+            metadata: { codigo: categoria.codigo },
+        });
         res.redirect("/modecat");
     } catch (err) {
         err.userMessage = "No se pudo eliminar la categoría. Puede que ya no exista.";

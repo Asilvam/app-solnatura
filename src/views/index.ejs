@@ -188,6 +188,7 @@
                                     </div>
                                 </div>
                                 <form action="/mode/<%= image._id %>/estado" method="post" class="mt-2">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                                     <input type="hidden" name="estado" value="<%= image.estado ? "false" : "true" %>" />
                                     <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
                                     <button type="submit" class="btn btn-block btn-sm rounded-pill <%= image.estado ? "btn-outline-warning" : "btn-outline-success" %>">
