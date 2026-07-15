@@ -188,6 +188,162 @@ h6 {
     color: #fff;
 }
 
+/* =============================================
+   PANEL DE ADMINISTRACIÓN
+   ============================================= */
+.admin-catalog-page {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.admin-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.admin-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-height: 92px;
+    padding: 1rem 1.15rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: var(--radio);
+    background-color: #fff;
+    box-shadow: var(--sombra-suave);
+    color: var(--texto);
+    text-decoration: none !important;
+    transition: var(--transicion);
+}
+
+.admin-summary-card:hover {
+    color: var(--texto);
+    box-shadow: var(--sombra-hover);
+    transform: translateY(-2px);
+}
+
+.admin-summary-card strong,
+.admin-summary-card small {
+    display: block;
+}
+
+.admin-summary-card strong {
+    font-size: 1.65rem;
+    line-height: 1;
+}
+
+.admin-summary-card small {
+    margin-top: 0.3rem;
+    color: var(--texto-suave);
+    font-weight: 700;
+}
+
+.admin-summary-icon {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.1rem;
+}
+
+.admin-summary-card--total .admin-summary-icon {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.admin-summary-card--active .admin-summary-icon {
+    background-color: #d4edda;
+    color: #218838;
+}
+
+.admin-summary-card--empty .admin-summary-icon {
+    background-color: #f8d7da;
+    color: #c82333;
+}
+
+.admin-summary-card--low .admin-summary-icon {
+    background-color: #fff3cd;
+    color: #b7791f;
+}
+
+.admin-summary-card--offer .admin-summary-icon {
+    background-color: #d6f5ee;
+    color: var(--verde-oscuro);
+}
+
+.admin-filter-card {
+    padding: 1.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: var(--radio);
+    background-color: #fff;
+    box-shadow: var(--sombra-suave);
+}
+
+.admin-filter-card label {
+    margin-bottom: 0.35rem;
+    color: var(--texto-suave);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.admin-filter-card .form-control,
+.admin-filter-card .input-group-text {
+    height: 42px;
+    border-color: #dfe6e3;
+}
+
+.admin-filter-card .input-group-text {
+    background-color: #f4f8f6;
+    color: var(--verde-oscuro);
+}
+
+.admin-empty-state {
+    margin: 2rem 0;
+    padding: 4rem 1rem;
+    border: 2px dashed #dfe6e3;
+    border-radius: var(--radio);
+    background-color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+}
+
+.admin-empty-state>i {
+    margin-bottom: 1rem;
+    color: var(--verde-principal);
+    font-size: 3rem;
+}
+
+.admin-empty-state p {
+    color: var(--texto-suave);
+}
+
+.admin-product-description {
+    display: -webkit-box;
+    flex-grow: 1;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.pagination .page-link {
+    margin: 0 0.15rem;
+    border: none;
+    border-radius: 50% !important;
+    color: var(--verde-oscuro);
+    font-weight: 700;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--verde-oscuro);
+    color: #fff;
+}
+
 
 /* --- Cards --- */
 .card {
@@ -293,12 +449,49 @@ h6 {
     font-weight: 700;
 }
 
+.badge-stock--low {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-stock--empty {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
 /* --- Grid catálogo --- */
 .catalogo-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
     padding: 1.5rem 0;
+}
+
+@media (max-width: 1199px) {
+    .admin-summary-grid {
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    .admin-catalog-page {
+        padding: 1rem !important;
+    }
+
+    .admin-summary-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .admin-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-filter-actions .btn {
+        width: 100%;
+        margin: 0 0 0.5rem !important;
+    }
 }
 
 /* --- Animate.css v4 compat --- */

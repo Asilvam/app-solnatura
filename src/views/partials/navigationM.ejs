@@ -21,7 +21,7 @@
                     </a>
                     <div class="dropdown-divider"></div>
                     <% categorias.forEach(function (categoria) { %>
-                        <a class="dropdown-item" href="/mode/cat/<%= categoria.codigo %>">
+                        <a class="dropdown-item" href="/mode?categoria=<%= encodeURIComponent(categoria.codigo) %>">
                             <i class="fa-solid fa-circle-dot text-success small"></i>
                             <%= categoria.nombre %>
                         </a>
@@ -44,10 +44,10 @@
                 </a>
             </li>
         </ul>
-        <form action="/search" method="post" enctype="multipart/form-data" class="form-inline my-2 my-lg-0 search-form">
+        <form action="/mode" method="get" class="form-inline my-2 my-lg-0 search-form">
             <div class="input-group search-group">
-                <input class="form-control search-input" type="search" name="buscar" placeholder="Buscar producto..."
-                    aria-label="Search" />
+                <input class="form-control search-input" type="search" name="q" placeholder="Buscar producto..."
+                    value="<%= typeof filters !== 'undefined' ? filters.q : '' %>" aria-label="Buscar producto" />
                 <div class="input-group-append">
                     <button class="btn btn-search" type="submit">
                         <i class="fa-solid fa-magnifying-glass"></i>

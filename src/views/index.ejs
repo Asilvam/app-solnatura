@@ -12,73 +12,219 @@
 <body>
     <%- include("partials/navigationM") %>
 
-        <div class="container-fluid p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="font-weight-800 text-dark mb-0">Gestión de Catálogo</h2>
-                <a href="/upload" class="btn btn-success rounded-pill px-4">
+        <main class="container-fluid admin-catalog-page p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div class="mb-2 mb-md-0">
+                    <h2 class="font-weight-800 text-dark mb-1">Gestión de Catálogo</h2>
+                    <p class="text-muted mb-0">Controla vigencia, stock, precios y categorías desde un solo lugar.</p>
+                </div>
+                <a href="/upload" class="btn btn-success rounded-pill px-4 py-2">
                     <i class="fa-solid fa-plus mr-2"></i> Nuevo Producto
                 </a>
             </div>
 
-            <div class="catalogo-grid">
-                <% images.forEach(function (image) { %>
-                    <div class="card animate__animated animate__fadeInUp">
-                        <div class="card-img-wrapper">
-                            <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>" />
-                            <!-- Badge de categoría flotante -->
-                            <span class="position-absolute badge badge-light shadow-sm"
-                                style="top: 10px; left: 10px; z-index: 2; border-radius: 20px; font-weight: 700; color: var(--verde-oscuro);">
-                                <%= image.categoria %>
-                            </span>
-                            <% if (!image.estado) { %>
-                                <span class="badge-no-vigente-diagonal">No vigente</span>
-                            <% } %>
+            <section class="admin-summary-grid mb-4" aria-label="Resumen del catálogo">
+                <a href="/mode" class="admin-summary-card admin-summary-card--total">
+                    <span class="admin-summary-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+                    <span><strong><%= stats.total %></strong><small>Total</small></span>
+                </a>
+                <a href="/mode?estado=vigente" class="admin-summary-card admin-summary-card--active">
+                    <span class="admin-summary-icon"><i class="fa-solid fa-circle-check"></i></span>
+                    <span><strong><%= stats.vigentes %></strong><small>Vigentes</small></span>
+                </a>
+                <a href="/mode?stock=sin-stock" class="admin-summary-card admin-summary-card--empty">
+                    <span class="admin-summary-icon"><i class="fa-solid fa-box-open"></i></span>
+                    <span><strong><%= stats.sinStock %></strong><small>Sin stock</small></span>
+                </a>
+                <a href="/mode?stock=bajo" class="admin-summary-card admin-summary-card--low">
+                    <span class="admin-summary-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    <span><strong><%= stats.stockBajo %></strong><small>Stock bajo</small></span>
+                </a>
+                <a href="/mode?oferta=si" class="admin-summary-card admin-summary-card--offer">
+                    <span class="admin-summary-icon"><i class="fa-solid fa-tags"></i></span>
+                    <span><strong><%= stats.ofertas %></strong><small>En oferta</small></span>
+                </a>
+            </section>
+
+            <section class="admin-filter-card mb-4">
+                <form action="/mode" method="get">
+                    <div class="row align-items-end">
+                        <div class="col-xl-3 col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="filter-q">Buscar</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                    </div>
+                                    <input id="filter-q" name="q" type="search" class="form-control"
+                                        value="<%= filters.q %>" placeholder="Nombre, código o descripción" />
+                                </div>
+                            </div>
                         </div>
-
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-truncate">
-                                <%= image.title %>
-                            </h5>
-
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="badge-precio">$ <%= image.precio %></span>
-                                <span class="badge-stock">
-                                    <i class="fa-solid fa-boxes-stacked"></i>
-                                    <%= image.cantidad %>
-                                </span>
+                        <div class="col-xl-2 col-md-3 col-sm-6">
+                            <div class="form-group mb-3">
+                                <label for="filter-estado">Vigencia</label>
+                                <select id="filter-estado" name="estado" class="form-control">
+                                    <option value="">Todas</option>
+                                    <option value="vigente" <%= filters.estado === "vigente" ? "selected" : "" %>>Vigentes</option>
+                                    <option value="no-vigente" <%= filters.estado === "no-vigente" ? "selected" : "" %>>No vigentes</option>
+                                </select>
                             </div>
-
-                            <div class="d-flex justify-content-between small text-muted mb-2">
-                                <span><i class="fa-solid fa-barcode"></i>
-                                    <%= image.codigo %>
-                                </span>
-                                <span><i class="fa-solid fa-calendar-check"></i> Ciclo: <%= image.ciclo %></span>
+                        </div>
+                        <div class="col-xl-2 col-md-3 col-sm-6">
+                            <div class="form-group mb-3">
+                                <label for="filter-stock">Stock</label>
+                                <select id="filter-stock" name="stock" class="form-control">
+                                    <option value="">Cualquier stock</option>
+                                    <option value="con-stock" <%= filters.stock === "con-stock" ? "selected" : "" %>>Con stock</option>
+                                    <option value="sin-stock" <%= filters.stock === "sin-stock" ? "selected" : "" %>>Sin stock</option>
+                                    <option value="bajo" <%= filters.stock === "bajo" ? "selected" : "" %>>Bajo (1–<%= lowStockLimit %>)</option>
+                                </select>
                             </div>
-
-                            <p class="text-muted small mb-3"
-                                style="flex-grow:1; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical;">
-                                <%= image.description %>
-                            </p>
-
-                            <div class="row no-gutters gap-2 mt-auto">
-                                <div class="col-6 pr-1">
-                                    <a href="/update/<%= image._id %>"
-                                        class="btn btn-outline-primary btn-block btn-sm rounded-pill">
-                                        <i class="fa-solid fa-pen-to-square"></i> Editar
-                                    </a>
-                                </div>
-                                <div class="col-6 pl-1">
-                                    <a href="/image/<%= image._id %>"
-                                        class="btn btn-outline-danger btn-block btn-sm rounded-pill">
-                                        <i class="fa-solid fa-trash-can"></i> Borrar
-                                    </a>
-                                </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="form-group mb-3">
+                                <label for="filter-categoria">Categoría</label>
+                                <select id="filter-categoria" name="categoria" class="form-control">
+                                    <option value="">Todas</option>
+                                    <% categorias.forEach(function (categoria) { %>
+                                        <option value="<%= categoria.codigo %>" <%= filters.categoria === categoria.codigo ? "selected" : "" %>>
+                                            <%= categoria.nombre %>
+                                        </option>
+                                    <% }) %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-xl-1 col-md-4 col-sm-6">
+                            <div class="form-group mb-3">
+                                <label for="filter-oferta">Oferta</label>
+                                <select id="filter-oferta" name="oferta" class="form-control">
+                                    <option value="">Todas</option>
+                                    <option value="si" <%= filters.oferta === "si" ? "selected" : "" %>>Sí</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4">
+                            <div class="form-group mb-3">
+                                <label for="filter-orden">Ordenar</label>
+                                <select id="filter-orden" name="orden" class="form-control">
+                                    <option value="recientes" <%= filters.orden === "recientes" ? "selected" : "" %>>Más recientes</option>
+                                    <option value="antiguos" <%= filters.orden === "antiguos" ? "selected" : "" %>>Más antiguos</option>
+                                    <option value="nombre_asc" <%= filters.orden === "nombre_asc" ? "selected" : "" %>>Nombre A–Z</option>
+                                    <option value="nombre_desc" <%= filters.orden === "nombre_desc" ? "selected" : "" %>>Nombre Z–A</option>
+                                    <option value="precio_asc" <%= filters.orden === "precio_asc" ? "selected" : "" %>>Precio menor</option>
+                                    <option value="precio_desc" <%= filters.orden === "precio_desc" ? "selected" : "" %>>Precio mayor</option>
+                                    <option value="stock_asc" <%= filters.orden === "stock_asc" ? "selected" : "" %>>Menor stock</option>
+                                    <option value="stock_desc" <%= filters.orden === "stock_desc" ? "selected" : "" %>>Mayor stock</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-                    <% }) %>
+                    <div class="d-flex flex-wrap justify-content-end admin-filter-actions">
+                        <a href="/mode" class="btn btn-light rounded-pill px-4 mr-2">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Limpiar
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fa-solid fa-filter mr-1"></i> Aplicar filtros
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                <p class="text-muted mb-0">
+                    <strong class="text-dark"><%= pagination.total %></strong>
+                    <%= pagination.total === 1 ? "producto encontrado" : "productos encontrados" %>
+                </p>
+                <% if (pagination.totalPages > 1) { %>
+                    <small class="text-muted">Página <%= pagination.page %> de <%= pagination.totalPages %></small>
+                <% } %>
             </div>
-        </div>
+
+            <% if (images.length === 0) { %>
+                <div class="admin-empty-state">
+                    <i class="fa-solid fa-filter-circle-xmark"></i>
+                    <h4>No encontramos productos</h4>
+                    <p>Prueba eliminando uno o más filtros.</p>
+                    <a href="/mode" class="btn btn-outline-primary rounded-pill px-4">Ver todo el catálogo</a>
+                </div>
+            <% } else { %>
+                <div class="catalogo-grid">
+                    <% images.forEach(function (image) { %>
+                        <article class="card animate__animated animate__fadeInUp">
+                            <div class="card-img-wrapper">
+                                <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>" />
+                                <span class="position-absolute badge badge-light shadow-sm"
+                                    style="top: 10px; left: 10px; z-index: 2; border-radius: 20px; font-weight: 700; color: var(--verde-oscuro);">
+                                    <%= image.categoria %>
+                                </span>
+                                <% if (!image.estado) { %>
+                                    <span class="badge-no-vigente-diagonal">No vigente</span>
+                                <% } %>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-truncate"><%= image.title %></h5>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="badge-precio">$ <%= (image.precio || 0).toLocaleString("es-CL") %></span>
+                                    <span class="badge-stock <%= image.cantidad <= 0 ? "badge-stock--empty" : (image.cantidad <= lowStockLimit ? "badge-stock--low" : "") %>">
+                                        <i class="fa-solid fa-boxes-stacked"></i> Stock: <%= image.cantidad || 0 %>
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted mb-2">
+                                    <span><i class="fa-solid fa-barcode"></i> <%= image.codigo %></span>
+                                    <span><i class="fa-solid fa-calendar-check"></i> Ciclo: <%= image.ciclo %></span>
+                                </div>
+                                <p class="text-muted small mb-3 admin-product-description"><%= image.description %></p>
+                                <div class="row no-gutters mt-auto">
+                                    <div class="col-6 pr-1">
+                                        <a href="/update/<%= image._id %>" class="btn btn-outline-primary btn-block btn-sm rounded-pill">
+                                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                                        </a>
+                                    </div>
+                                    <div class="col-6 pl-1">
+                                        <a href="/image/<%= image._id %>" class="btn btn-outline-danger btn-block btn-sm rounded-pill">
+                                            <i class="fa-solid fa-trash-can"></i> Borrar
+                                        </a>
+                                    </div>
+                                </div>
+                                <form action="/mode/<%= image._id %>/estado" method="post" class="mt-2">
+                                    <input type="hidden" name="estado" value="<%= image.estado ? "false" : "true" %>" />
+                                    <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
+                                    <button type="submit" class="btn btn-block btn-sm rounded-pill <%= image.estado ? "btn-outline-warning" : "btn-outline-success" %>">
+                                        <i class="fa-solid <%= image.estado ? "fa-eye-slash" : "fa-eye" %> mr-1"></i>
+                                        <%= image.estado ? "Marcar no vigente" : "Activar producto" %>
+                                    </button>
+                                </form>
+                            </div>
+                        </article>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <% if (pagination.totalPages > 1) { %>
+                <% const firstVisiblePage = Math.max(1, pagination.page - 2); %>
+                <% const lastVisiblePage = Math.min(pagination.totalPages, pagination.page + 2); %>
+                <nav aria-label="Paginación del catálogo" class="mt-4">
+                    <ul class="pagination justify-content-center flex-wrap">
+                        <li class="page-item <%= pagination.page === 1 ? "disabled" : "" %>">
+                            <a class="page-link" href="<%= modeUrl({ page: pagination.page - 1 }) %>" aria-label="Página anterior">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        <% for (let pageNumber = firstVisiblePage; pageNumber <= lastVisiblePage; pageNumber += 1) { %>
+                            <li class="page-item <%= pageNumber === pagination.page ? "active" : "" %>">
+                                <a class="page-link" href="<%= modeUrl({ page: pageNumber }) %>"><%= pageNumber %></a>
+                            </li>
+                        <% } %>
+                        <li class="page-item <%= pagination.page === pagination.totalPages ? "disabled" : "" %>">
+                            <a class="page-link" href="<%= modeUrl({ page: pagination.page + 1 }) %>" aria-label="Página siguiente">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            <% } %>
+        </main>
 </body>
 
 </html>
