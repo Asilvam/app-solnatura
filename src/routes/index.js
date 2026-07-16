@@ -12,6 +12,7 @@ cloudinary.config({
 // Models
 const Image = require("../models/Image");
 const Categoria = require("../models/Categoria");
+const Pedido = require("../models/Pedido");
 
 router.get("/", async (req, res, next) => {
     try {
@@ -232,6 +233,139 @@ router.get("/categoria/:id/delete", async (req, res, next) => {
         res.redirect("/modecat");
     } catch (err) {
         err.userMessage = "No se pudo eliminar la categoría. Puede que ya no exista.";
+        next(err);
+    }
+});
+
+// Stock management: show all products with low/zero stock
+router.get("/mode/stock", async (req, res, next) => {
+    try {
+        const images = await Image.find({ $or: [{ cantidad: { $lte: 0 } }, { cantidad: { $exists: false } }, { cantidad: null }] });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("index", { images, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudo cargar la vista de stock bajo.";
+        next(err);
+    }
+});
+
+// Stock management: show adjustment form for a specific product
+router.get("/stock/:id", async (req, res, next) => {
+    try {
+        const image = await Image.findById(req.params.id);
+        if (!image) {
+            const err = new Error("Producto no encontrado.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+        const categorias = await Categoria.find({ estado: true });
+        res.render("stock", { image, categorias });
+    } catch (err) {
+        err.userMessage = "No se encontró el producto para ajustar su stock.";
+        next(err);
+    }
+});
+
+// Stock management: apply stock adjustment
+router.post("/stock/:id", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { operacion, cantidad } = req.body;
+        const ajuste = parseInt(cantidad, 10);
+
+        if (isNaN(ajuste) || ajuste < 0) {
+            const err = new Error("La cantidad debe ser un número válido mayor o igual a cero.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+
+        const product = await Image.findById(id);
+        if (!product) {
+            const err = new Error("Producto no encontrado.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+
+        let nuevoStock = product.cantidad || 0;
+        if (operacion === "agregar") {
+            nuevoStock += ajuste;
+        } else if (operacion === "restar") {
+            nuevoStock = Math.max(0, nuevoStock - ajuste);
+        } else {
+            // "establecer"
+            nuevoStock = ajuste;
+        }
+
+        await Image.updateOne({ _id: id }, { cantidad: nuevoStock });
+        res.redirect("/mode");
+    } catch (err) {
+        err.userMessage = "Error al ajustar el stock del producto.";
+        next(err);
+    }
+});
+
+// ---------------------------------------------------------------
+// PEDIDOS (Orders)
+// ---------------------------------------------------------------
+
+// Public: create a new order from cart (JSON API)
+router.post("/pedido", async (req, res, next) => {
+    try {
+        const { items, total, nombre, telefono, notas } = req.body;
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: "El carrito está vacío." });
+        }
+
+        for (const item of items) {
+            if (!item.title || !item.codigo || !item.precio || !item.cantidad) {
+                return res.status(400).json({ error: "Datos de producto incompletos." });
+            }
+        }
+
+        const pedido = new Pedido({
+            items,
+            total: isFinite(parseFloat(total)) && parseFloat(total) >= 0 ? parseFloat(total) : 0,
+            nombre: nombre || "",
+            telefono: telefono || "",
+            notas: notas || "",
+        });
+
+        await pedido.save();
+        res.json({ ok: true, id: pedido._id });
+    } catch (err) {
+        err.userMessage = "No se pudo guardar el pedido.";
+        next(err);
+    }
+});
+
+// Admin: list all orders
+router.get("/mode/pedidos", async (req, res, next) => {
+    try {
+        const pedidos = await Pedido.find().sort({ createdAt: -1 });
+        const categorias = await Categoria.find({ estado: true });
+        res.render("pedidos", { pedidos, categorias });
+    } catch (err) {
+        err.userMessage = "No se pudieron cargar los pedidos.";
+        next(err);
+    }
+});
+
+// Admin: update order status
+router.post("/mode/pedidos/:id/estado", async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+        const allowed = ["pendiente", "confirmado", "cancelado"];
+        if (!allowed.includes(estado)) {
+            const err = new Error("Estado inválido.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+        await Pedido.updateOne({ _id: id }, { estado });
+        res.redirect("/mode/pedidos");
+    } catch (err) {
+        err.userMessage = "No se pudo actualizar el estado del pedido.";
         next(err);
     }
 });
