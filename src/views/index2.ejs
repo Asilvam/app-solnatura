@@ -232,9 +232,7 @@
                                 <%= image.description %>
                             </p>
 
-                            <button type="button"
-                                onclick="event.stopPropagation(); addToCart('<%= image.title %>', '<%= image.codigo %>', '<%= image.ciclo %>', '<%= image.precio %>')"
-                                class="btn btn-add-cart btn-block mt-auto">
+                            <button type="button" data-cart-add class="btn btn-add-cart btn-block mt-auto">
                                 <i class="fa-solid fa-cart-plus"></i>
                                 Añadir al carrito
                             </button>
@@ -420,7 +418,36 @@
 
         <script>
             // --- Lógica del Carrito ---
-            let cart = JSON.parse(localStorage.getItem('solnatura_cart')) || [];
+            function loadCart() {
+                try {
+                    const savedCart = JSON.parse(localStorage.getItem('solnatura_cart'));
+                    if (!Array.isArray(savedCart)) return [];
+
+                    return savedCart.reduce((validItems, item) => {
+                        if (!item || typeof item !== 'object') return validItems;
+
+                        const precio = Number(item.precio);
+                        const cantidad = Number.parseInt(item.cantidad, 10);
+                        const codigo = String(item.codigo || '').trim();
+
+                        if (!codigo || !Number.isFinite(precio) || precio < 0) return validItems;
+
+                        validItems.push({
+                            title: String(item.title || 'Producto'),
+                            codigo,
+                            ciclo: String(item.ciclo || ''),
+                            precio,
+                            cantidad: Number.isInteger(cantidad) && cantidad > 0 ? cantidad : 1,
+                        });
+                        return validItems;
+                    }, []);
+                } catch (error) {
+                    localStorage.removeItem('solnatura_cart');
+                    return [];
+                }
+            }
+
+            let cart = loadCart();
             let cartToastTimer;
 
             function addToCart(title, codigo, ciclo, precio) {
@@ -442,19 +469,23 @@
                 showCartConfirmation(title, quantityUpdated);
             }
 
-            function showCartConfirmation(title, quantityUpdated) {
+            function showCartToast(title, message) {
                 const toast = document.getElementById('cartToast');
                 const toastTitle = document.getElementById('cartToastTitle');
                 const toastProduct = document.getElementById('cartToastProduct');
 
-                toastTitle.textContent = quantityUpdated ? 'Cantidad actualizada' : 'Agregado al carrito';
-                toastProduct.textContent = title;
+                toastTitle.textContent = title;
+                toastProduct.textContent = message;
                 toast.classList.remove('is-visible');
                 void toast.offsetWidth;
                 toast.classList.add('is-visible');
 
                 clearTimeout(cartToastTimer);
                 cartToastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2600);
+            }
+
+            function showCartConfirmation(title, quantityUpdated) {
+                showCartToast(quantityUpdated ? 'Cantidad actualizada' : 'Agregado al carrito', title);
             }
 
             function removeFromCart(index) {
@@ -488,17 +519,16 @@
                 // Calculate total items (sum of all quantities)
                 const totalItems = cart.reduce((sum, item) => sum + (item.cantidad || 1), 0);
                 badge.textContent = totalItems;
+                list.replaceChildren();
 
                 if (cart.length === 0) {
                     emptyMsg.style.display = 'block';
-                    list.innerHTML = '';
                     totalEl.textContent = '0';
                     btnSend.disabled = true;
                 } else {
                     emptyMsg.style.display = 'none';
                     btnSend.disabled = false;
 
-                    let html = '';
                     let total = 0;
 
                     cart.forEach((item, index) => {
@@ -506,32 +536,76 @@
                         const subtotal = parseFloat(item.precio) * cantidad;
                         total += subtotal;
 
-                        html += `
-                            <li class="list-group-item d-flex justify-content-between align-items-center cart-item-row">
-                                <div class="cart-item-main">
-                                    <h6 class="mb-0 text-dark font-weight-bold cart-item-title">${item.title}</h6>
-                                    <small class="text-muted">Cód: ${item.codigo} ${item.ciclo ? '- Ciclo: ' + item.ciclo : ''}</small>
-                                </div>
-                                <div class="d-flex align-items-center cart-item-actions">
-                                    <div class="input-group input-group-sm cart-quantity-control">
-                                        <div class="input-group-prepend">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${index}, -1)">-</button>
-                                        </div>
-                                        <input type="text" class="form-control text-center px-0 bg-white" value="${cantidad}" readonly>
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${index}, 1)">+</button>
-                                        </div>
-                                    </div>
-                                    <span class="font-weight-bold text-success cart-item-subtotal">$${subtotal.toLocaleString('es-CL')}</span>
-                                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeFromCart(${index})">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </div>
-                            </li>
-                        `;
+                        const row = document.createElement('li');
+                        row.className = 'list-group-item d-flex justify-content-between align-items-center cart-item-row';
+
+                        const itemMain = document.createElement('div');
+                        itemMain.className = 'cart-item-main';
+
+                        const itemTitle = document.createElement('h6');
+                        itemTitle.className = 'mb-0 text-dark font-weight-bold cart-item-title';
+                        itemTitle.textContent = item.title;
+
+                        const itemMeta = document.createElement('small');
+                        itemMeta.className = 'text-muted';
+                        itemMeta.textContent = `Cód: ${item.codigo}${item.ciclo ? ` - Ciclo: ${item.ciclo}` : ''}`;
+
+                        itemMain.append(itemTitle, itemMeta);
+
+                        const actions = document.createElement('div');
+                        actions.className = 'd-flex align-items-center cart-item-actions';
+
+                        const quantityControl = document.createElement('div');
+                        quantityControl.className = 'input-group input-group-sm cart-quantity-control';
+
+                        const decrementShell = document.createElement('div');
+                        decrementShell.className = 'input-group-prepend';
+                        const decrementButton = document.createElement('button');
+                        decrementButton.className = 'btn btn-outline-secondary';
+                        decrementButton.type = 'button';
+                        decrementButton.setAttribute('aria-label', `Disminuir cantidad de ${item.title}`);
+                        decrementButton.textContent = '−';
+                        decrementButton.addEventListener('click', () => updateQuantity(index, -1));
+                        decrementShell.appendChild(decrementButton);
+
+                        const quantityInput = document.createElement('input');
+                        quantityInput.type = 'text';
+                        quantityInput.className = 'form-control text-center px-0 bg-white';
+                        quantityInput.value = cantidad;
+                        quantityInput.readOnly = true;
+                        quantityInput.setAttribute('aria-label', `Cantidad de ${item.title}`);
+
+                        const incrementShell = document.createElement('div');
+                        incrementShell.className = 'input-group-append';
+                        const incrementButton = document.createElement('button');
+                        incrementButton.className = 'btn btn-outline-secondary';
+                        incrementButton.type = 'button';
+                        incrementButton.setAttribute('aria-label', `Aumentar cantidad de ${item.title}`);
+                        incrementButton.textContent = '+';
+                        incrementButton.addEventListener('click', () => updateQuantity(index, 1));
+                        incrementShell.appendChild(incrementButton);
+
+                        quantityControl.append(decrementShell, quantityInput, incrementShell);
+
+                        const subtotalElement = document.createElement('span');
+                        subtotalElement.className = 'font-weight-bold text-success cart-item-subtotal';
+                        subtotalElement.textContent = `$${subtotal.toLocaleString('es-CL')}`;
+
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.className = 'btn btn-sm btn-outline-danger border-0';
+                        removeButton.setAttribute('aria-label', `Eliminar ${item.title} del carrito`);
+                        removeButton.addEventListener('click', () => removeFromCart(index));
+                        const removeIcon = document.createElement('i');
+                        removeIcon.className = 'fa-solid fa-trash';
+                        removeIcon.setAttribute('aria-hidden', 'true');
+                        removeButton.appendChild(removeIcon);
+
+                        actions.append(quantityControl, subtotalElement, removeButton);
+                        row.append(itemMain, actions);
+                        list.appendChild(row);
                     });
 
-                    list.innerHTML = html;
                     totalEl.textContent = total.toLocaleString('es-CL'); // Formato de miles
                 }
             }
@@ -566,21 +640,37 @@
                 message += 'Quedo atento/a para coordinar. ¡Gracias!';
 
                 const whatsappUrl = 'https://api.whatsapp.com/send?phone=56992513285&text=' + encodeURIComponent(message);
-                window.open(whatsappUrl, '_blank');
+                const whatsappWindow = window.open(whatsappUrl, '_blank');
 
-                // Clear cart and close modal AFTER a small delay to ensure window opens
-                setTimeout(() => {
-                    cart = [];
-                    saveCart();
-                    renderCart();
-                    $('#cartModal').modal('hide');
-                }, 500);
+                if (!whatsappWindow) {
+                    showCartToast('No pudimos abrir WhatsApp', 'Permite las ventanas emergentes e inténtalo nuevamente.');
+                    return;
+                }
+
+                whatsappWindow.opener = null;
+                $('#cartModal').modal('hide');
+                showCartToast('WhatsApp abierto', 'Tu carrito seguirá guardado hasta que decidas vaciarlo.');
             }
 
             // --- Lógica del Modal Info Producto (Actualizada) ---
             $(document).ready(function () {
                 // Initialize cart on load
                 renderCart();
+
+                document.querySelectorAll('[data-cart-add]').forEach((button) => {
+                    button.addEventListener('click', function (event) {
+                        event.stopPropagation();
+                        const productCard = button.closest('.product-card');
+                        if (!productCard) return;
+
+                        addToCart(
+                            productCard.dataset.title,
+                            productCard.dataset.codigo,
+                            productCard.dataset.ciclo,
+                            productCard.dataset.precio
+                        );
+                    });
+                });
 
                 $('#productModal').on('show.bs.modal', function (event) {
                     var button = $(event.relatedTarget);
