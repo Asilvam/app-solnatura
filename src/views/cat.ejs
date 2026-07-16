@@ -3,82 +3,388 @@
 
 <head>
     <meta charset="UTF-8" />
-    <link rel="shortcut icon" href="https://res.cloudinary.com/dujg9sojg/image/upload/v1591400278/favicon-32x32.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Subir Categoria</title>
+    <title>Categorías | Solnatura</title>
     <%- include("partials/head") -%>
 </head>
 
 <body>
     <%- include("partials/navigationM") %>
 
-        <div class="container p-4">
-            <div class="row">
-                <div class="col-lg-5 mb-4">
-                    <div class="card shadow-sm border-0" style="border-radius: 1rem;">
-                        <div class="card-header bg-white border-0 pt-4 text-center">
-                            <h4 class="font-weight-800 text-dark"><i
-                                    class="fa-solid fa-folder-plus text-success mr-2"></i>Nueva Categoría</h4>
-                        </div>
-                        <div class="card-body">
-                            <form action="/modecat" method="post" enctype="multipart/form-data">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                                <div class="form-group">
-                                    <label class="small font-weight-700 text-muted">Código</label>
-                                    <input type="text" name="codigo" placeholder="Ej: ROSTRO"
-                                        class="form-control rounded-pill px-3" required />
-                                </div>
-                                <div class="form-group">
-                                    <label class="small font-weight-700 text-muted">Nombre</label>
-                                    <input type="text" name="nombre" placeholder="Ej: Cuidado del Rostro"
-                                        class="form-control rounded-pill px-3" required />
-                                </div>
-                                <div class="form-group mt-4">
-                                    <button class="btn btn-success btn-block rounded-pill py-2 font-weight-700">
-                                        <i class="fa-solid fa-floppy-disk mr-2"></i> Guardar Categoría
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+    <% const assignedCategories = categorias.filter((categoria) => (productCounts[categoria.codigo] || 0) > 0).length; %>
+
+    <main class="container admin-category-page py-4 py-lg-5">
+        <header class="admin-category-header mb-4">
+            <div>
+                <span class="admin-category-eyebrow">Organización del catálogo</span>
+                <h1>Categorías</h1>
+                <p>Crea grupos claros para que administrar y encontrar productos sea más fácil.</p>
+            </div>
+            <div class="admin-category-summary" aria-label="Resumen de categorías">
+                <span><strong><%= categorias.length %></strong> totales</span>
+                <span><strong><%= assignedCategories %></strong> en uso</span>
+            </div>
+        </header>
+
+        <% if (notice) { %>
+            <div class="alert alert-info admin-notice" role="status">
+                <i class="fa-solid fa-circle-info mr-2"></i><%= notice %>
+            </div>
+        <% } %>
+
+        <div class="admin-category-layout">
+            <aside class="admin-category-create-card">
+                <div class="admin-category-create-title">
+                    <span><i class="fa-solid fa-folder-plus"></i></span>
+                    <div>
+                        <h2>Nueva categoría</h2>
+                        <p>El nombre será visible para clientes y administradores.</p>
                     </div>
                 </div>
 
-                <div class="col-lg-7">
-                    <div class="row">
+                <% if (Object.keys(errors).length > 0) { %>
+                    <div class="alert alert-danger admin-category-form-alert" role="alert">
+                        Revisa los campos marcados antes de guardar.
+                    </div>
+                <% } %>
+
+                <form action="/modecat" method="post" id="categoryCreateForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+                    <div class="form-group">
+                        <label for="categoryName">Nombre de la categoría</label>
+                        <input id="categoryName" type="text" name="nombre" value="<%= values.nombre %>"
+                            maxlength="100" placeholder="Ej: Cuidado del rostro"
+                            class="form-control <%= errors.nombre ? 'is-invalid' : '' %>" required />
+                        <% if (errors.nombre) { %><div class="invalid-feedback"><%= errors.nombre %></div><% } %>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label for="categoryCode">Código interno</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fa-solid fa-hashtag"></i></span>
+                            </div>
+                            <input id="categoryCode" type="text" name="codigo" value="<%= values.codigo %>"
+                                maxlength="100" placeholder="CUIDADO-ROSTRO"
+                                class="form-control text-uppercase <%= errors.codigo ? 'is-invalid' : '' %>" required />
+                        </div>
+                        <% if (errors.codigo) { %><div class="invalid-feedback d-block"><%= errors.codigo %></div><% } %>
+                        <small class="admin-category-help">Se genera desde el nombre. Puedes modificarlo antes de guardar.</small>
+                    </div>
+
+                    <div class="admin-category-preview" aria-label="Vista previa de la categoría">
+                        <small>Vista previa</small>
+                        <div class="admin-category-preview-line">
+                            <strong id="categoryPreviewName">Nombre de categoría</strong>
+                            <span id="categoryPreviewCode">CÓDIGO</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block rounded-pill py-2 mt-4">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar categoría
+                    </button>
+                </form>
+            </aside>
+
+            <section class="admin-category-list-panel">
+                <div class="admin-category-list-header">
+                    <div>
+                        <h2>Categorías creadas</h2>
+                        <p><span id="visibleCategoryCount"><%= categorias.length %></span> visibles</p>
+                    </div>
+                    <div class="admin-category-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input id="categorySearch" type="search" class="form-control"
+                            placeholder="Buscar categoría..." aria-label="Buscar categoría" />
+                    </div>
+                </div>
+
+                <% if (categorias.length === 0) { %>
+                    <div class="admin-category-empty">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <strong>Aún no hay categorías</strong>
+                        <span>Crea la primera usando el formulario.</span>
+                    </div>
+                <% } else { %>
+                    <div class="admin-category-list" id="categoryList">
                         <% categorias.forEach(function (categoria) { %>
-                            <div class="col-md-6 mb-3">
-                                <div class="card shadow-sm border-0"
-                                    style="border-radius: 1rem; border-left: 5px solid var(--morado-medio) !important;">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span
-                                                class="badge badge-light px-3 py-2 rounded-pill text-uppercase font-weight-700"
-                                                style="color: var(--morado-principal);">
-                                                <%= categoria.codigo %>
-                                            </span>
-                                            <span class="small text-muted font-weight-600">
-                                                <%= categoria.estado %>
-                                            </span>
-                                        </div>
-                                        <h5 class="font-weight-800 text-dark mb-4">
-                                            <%= categoria.nombre %>
-                                        </h5>
-                                        <form action="/categoria/<%= categoria._id %>/delete" method="post">
-                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                                            <button type="submit"
-                                                class="btn btn-outline-danger btn-sm btn-block rounded-pill">
-                                                <i class="fa-solid fa-trash-can mr-1"></i> Borrar
-                                            </button>
-                                        </form>
+                            <% const productCount = productCounts[categoria.codigo] || 0; %>
+                            <article class="admin-category-item"
+                                data-category-search="<%= `${categoria.nombre} ${categoria.codigo}`.toLowerCase() %>">
+                                <div class="admin-category-item-icon"><i class="fa-solid fa-folder"></i></div>
+                                <div class="admin-category-item-main">
+                                    <div class="admin-category-item-title">
+                                        <strong title="<%= categoria.nombre %>"><%= categoria.nombre %></strong>
+                                        <span class="<%= categoria.estado === false ? 'is-inactive' : '' %>">
+                                            <i class="fa-solid fa-circle"></i>
+                                            <%= categoria.estado === false ? 'No vigente' : 'Vigente' %>
+                                        </span>
+                                    </div>
+                                    <div class="admin-category-item-meta">
+                                        <code><%= categoria.codigo %></code>
+                                        <span>
+                                            <i class="fa-solid fa-box"></i>
+                                            <%= productCount %> <%= productCount === 1 ? 'producto' : 'productos' %>
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
-                            <% }) %>
+                                <div class="admin-category-item-actions">
+                                    <button type="button"
+                                        class="btn btn-outline-secondary btn-sm rounded-pill category-edit-trigger"
+                                        data-toggle="modal" data-target="#editCategoryModal"
+                                        data-category-id="<%= categoria._id %>"
+                                        data-category-name="<%= categoria.nombre %>"
+                                        data-category-code="<%= categoria.codigo %>"
+                                        data-category-state="<%= categoria.estado !== false %>"
+                                        data-category-products="<%= productCount %>">
+                                        <i class="fa-solid fa-pen-to-square"></i><span>Editar</span>
+                                    </button>
+                                    <% if (productCount > 0) { %>
+                                        <a href="/mode?categoria=<%= encodeURIComponent(categoria.codigo) %>"
+                                            class="btn btn-outline-primary btn-sm rounded-pill" title="Ver productos">
+                                            <i class="fa-solid fa-eye"></i><span>Ver</span>
+                                        </a>
+                                        <button type="button" class="btn btn-light btn-sm rounded-pill" disabled
+                                            title="Mueve sus productos antes de borrar esta categoría">
+                                            <i class="fa-solid fa-lock"></i><span>En uso</span>
+                                        </button>
+                                    <% } else { %>
+                                        <button type="button"
+                                            class="btn btn-outline-danger btn-sm rounded-pill category-delete-trigger"
+                                            data-toggle="modal" data-target="#deleteCategoryModal"
+                                            data-category-id="<%= categoria._id %>"
+                                            data-category-name="<%= categoria.nombre %>"
+                                            data-category-code="<%= categoria.codigo %>">
+                                            <i class="fa-solid fa-trash-can"></i><span>Borrar</span>
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </article>
+                        <% }) %>
                     </div>
+                    <div class="admin-category-empty d-none" id="categorySearchEmpty">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <strong>No encontramos coincidencias</strong>
+                        <span>Prueba buscando por nombre o código.</span>
+                    </div>
+                <% } %>
+            </section>
+        </div>
+    </main>
+
+    <div class="modal fade" id="editCategoryModal" tabindex="-1" role="dialog"
+        aria-labelledby="editCategoryModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content admin-category-edit-modal">
+                <div class="modal-header admin-category-edit-modal-header">
+                    <div class="admin-category-edit-heading">
+                        <span><i class="fa-solid fa-pen-to-square"></i></span>
+                        <div>
+                            <small>Editar categoría</small>
+                            <h5 class="modal-title" id="editCategoryModalTitle">Actualizar información</h5>
+                        </div>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="editCategoryForm" method="post">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="editCategoryName">Nombre visible</label>
+                            <input id="editCategoryName" type="text" name="nombre" class="form-control"
+                                maxlength="100" required />
+                        </div>
+                        <div class="form-group mb-0">
+                            <label for="editCategoryCode">Código interno</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fa-solid fa-hashtag"></i></span>
+                                </div>
+                                <input id="editCategoryCode" type="text" name="codigo"
+                                    class="form-control text-uppercase" maxlength="100" required />
+                            </div>
+                            <small class="admin-category-help">
+                                Cambiar el código también actualizará los productos asociados.
+                            </small>
+                        </div>
+                        <div class="admin-category-edit-status">
+                            <div>
+                                <strong>Visible y disponible</strong>
+                                <span>Controla si la categoría puede usarse y mostrarse en la tienda.</span>
+                            </div>
+                            <div class="custom-control custom-switch">
+                                <input id="editCategoryState" type="checkbox" name="estado" value="true"
+                                    class="custom-control-input" />
+                                <label class="custom-control-label" for="editCategoryState">Vigente</label>
+                            </div>
+                        </div>
+                        <div class="admin-category-edit-impact" id="editCategoryImpact" role="status"></div>
+                    </div>
+                    <div class="modal-footer admin-category-edit-footer">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" role="dialog"
+        aria-labelledby="deleteCategoryModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content admin-delete-modal">
+                <div class="modal-header admin-delete-modal-header">
+                    <div class="admin-delete-modal-heading">
+                        <span class="admin-delete-modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                        <div>
+                            <small>Confirmar eliminación</small>
+                            <h5 class="modal-title" id="deleteCategoryModalTitle">¿Borrar esta categoría?</h5>
+                        </div>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="admin-category-delete-preview">
+                        <span><i class="fa-solid fa-folder"></i></span>
+                        <div>
+                            <strong id="deleteCategoryName"></strong>
+                            <code id="deleteCategoryCode"></code>
+                        </div>
+                    </div>
+                    <div class="admin-delete-warning mb-0">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <p>La categoría se eliminará permanentemente. Esta acción no se puede deshacer.</p>
+                    </div>
+                </div>
+                <div class="modal-footer admin-delete-modal-footer">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Cancelar</button>
+                    <form id="deleteCategoryForm" method="post">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <button type="submit" class="btn btn-danger rounded-pill px-4">
+                            <i class="fa-solid fa-trash-can mr-2"></i>Sí, borrar categoría
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const nameInput = document.getElementById('categoryName');
+            const codeInput = document.getElementById('categoryCode');
+            const previewName = document.getElementById('categoryPreviewName');
+            const previewCode = document.getElementById('categoryPreviewCode');
+            let codeWasEdited = codeInput.value.trim().length > 0;
+
+            function createCategoryCode(value) {
+                return value
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .slice(0, 100);
+            }
+
+            function updateCategoryPreview() {
+                previewName.textContent = nameInput.value.trim() || 'Nombre de categoría';
+                previewCode.textContent = codeInput.value.trim() || 'CÓDIGO';
+            }
+
+            nameInput.addEventListener('input', function () {
+                if (!codeWasEdited) codeInput.value = createCategoryCode(nameInput.value);
+                updateCategoryPreview();
+            });
+
+            codeInput.addEventListener('input', function () {
+                codeWasEdited = true;
+                codeInput.value = createCategoryCode(codeInput.value);
+                updateCategoryPreview();
+            });
+
+            updateCategoryPreview();
+
+            const searchInput = document.getElementById('categorySearch');
+            if (searchInput) {
+                const categoryItems = Array.from(document.querySelectorAll('.admin-category-item'));
+                const visibleCount = document.getElementById('visibleCategoryCount');
+                const emptyResult = document.getElementById('categorySearchEmpty');
+
+                searchInput.addEventListener('input', function () {
+                    const query = searchInput.value.trim().toLowerCase();
+                    let count = 0;
+
+                    categoryItems.forEach((item) => {
+                        const isVisible = item.dataset.categorySearch.includes(query);
+                        item.classList.toggle('d-none', !isVisible);
+                        if (isVisible) count += 1;
+                    });
+
+                    visibleCount.textContent = count;
+                    emptyResult.classList.toggle('d-none', count > 0);
+                });
+            }
+
+            const editCategoryForm = document.getElementById('editCategoryForm');
+            const editCategoryName = document.getElementById('editCategoryName');
+            const editCategoryCode = document.getElementById('editCategoryCode');
+            const editCategoryState = document.getElementById('editCategoryState');
+            const editCategoryImpact = document.getElementById('editCategoryImpact');
+            let editingCategoryProductCount = 0;
+
+            function updateEditCategoryImpact() {
+                if (!editCategoryState.checked) {
+                    editCategoryImpact.innerHTML = editingCategoryProductCount > 0
+                        ? `<i class="fa-solid fa-eye-slash"></i> Sus <strong>${editingCategoryProductCount}</strong> producto${editingCategoryProductCount === 1 ? '' : 's'} dejarán de mostrarse en la tienda.`
+                        : '<i class="fa-solid fa-eye-slash"></i> La categoría dejará de aparecer en la tienda y en los formularios de productos.';
+                    editCategoryImpact.classList.add('is-inactive');
+                    return;
+                }
+
+                editCategoryImpact.innerHTML = editingCategoryProductCount > 0
+                    ? `<i class="fa-solid fa-boxes-stacked"></i> Esta categoría tiene <strong>${editingCategoryProductCount}</strong> producto${editingCategoryProductCount === 1 ? '' : 's'} asociado${editingCategoryProductCount === 1 ? '' : 's'}.`
+                    : '<i class="fa-solid fa-circle-check"></i> Esta categoría aún no tiene productos asociados.';
+                editCategoryImpact.classList.remove('is-inactive');
+            }
+
+            document.querySelectorAll('.category-edit-trigger').forEach((button) => {
+                button.addEventListener('click', function () {
+                    editingCategoryProductCount = Number(button.dataset.categoryProducts) || 0;
+                    editCategoryForm.action = `/categoria/${encodeURIComponent(button.dataset.categoryId)}/update`;
+                    editCategoryName.value = button.dataset.categoryName;
+                    editCategoryCode.value = button.dataset.categoryCode;
+                    editCategoryState.checked = button.dataset.categoryState === 'true';
+                    updateEditCategoryImpact();
+                });
+            });
+
+            editCategoryCode.addEventListener('input', function () {
+                editCategoryCode.value = createCategoryCode(editCategoryCode.value);
+            });
+
+            editCategoryState.addEventListener('change', updateEditCategoryImpact);
+
+            const deleteCategoryForm = document.getElementById('deleteCategoryForm');
+            document.querySelectorAll('.category-delete-trigger').forEach((button) => {
+                button.addEventListener('click', function () {
+                    deleteCategoryForm.action = `/categoria/${encodeURIComponent(button.dataset.categoryId)}/delete`;
+                    document.getElementById('deleteCategoryName').textContent = button.dataset.categoryName;
+                    document.getElementById('deleteCategoryCode').textContent = button.dataset.categoryCode;
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

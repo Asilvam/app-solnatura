@@ -5,208 +5,213 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Producto Edicion</title>
+    <title>Editar producto | Solnatura</title>
     <%- include("partials/head") -%>
 </head>
 
 <body>
     <%- include("partials/navigationM") %>
 
-        <div class="container p-4">
-            <div class="row justify-content-center">
-                <div class="col-lg-6 col-md-8">
-                    <div class="card shadow-sm border-0" style="border-radius: 1.25rem; overflow: hidden;">
-                        <div class="card-header bg-primary text-white text-center py-4 border-0">
-                            <h3 class="font-weight-800 mb-0"><i class="fa-solid fa-pen-to-square mr-2"></i>Editar
-                                Producto</h3>
-                        </div>
-                        <div class="card-body p-4 p-md-5">
+    <main class="container admin-product-editor py-4 py-lg-5">
+        <header class="admin-editor-header mb-4">
+            <div>
+                <span class="admin-editor-eyebrow">Administración de productos</span>
+                <h1>Editar producto</h1>
+                <p>Actualiza la información que verá el cliente en la tienda.</p>
+            </div>
+            <a href="/mode" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fa-solid fa-arrow-left mr-2"></i>Volver al catálogo
+            </a>
+        </header>
 
-                            <div class="text-center mb-4">
-                                <div
-                                    style="background-color: #f8f9fa; border-radius: 1rem; padding: 1rem; display: inline-block;">
-                                    <img src="<%= image.path %>" alt="<%= image.title %>"
-                                        class="img-fluid rounded shadow-sm"
-                                        style="max-height: 200px; object-fit: contain;" />
-                                </div>
-                                <p class="small text-muted mt-2">Imagen actual</p>
+        <% if (Object.keys(errors).length > 0) { %>
+            <div class="alert alert-danger admin-editor-alert" role="alert">
+                <i class="fa-solid fa-circle-exclamation mr-2"></i>
+                <strong>No pudimos actualizar el producto.</strong> Revisa los campos marcados.
+            </div>
+        <% } %>
+
+        <form action="/update/<%= image._id %>" method="post" enctype="multipart/form-data" class="admin-editor-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+            <div class="admin-editor-layout">
+                <aside class="admin-editor-media-card">
+                    <div class="admin-editor-media-heading">
+                        <span>Imagen del producto</span>
+                        <small>JPG, PNG o WEBP</small>
+                    </div>
+                    <div class="admin-editor-image-shell">
+                        <img id="productImagePreview" src="<%= image.path %>" alt="<%= image.title %>" />
+                    </div>
+                    <div class="custom-file mt-3">
+                        <input type="file" name="image"
+                            class="custom-file-input <%= errors.image ? 'is-invalid' : '' %>"
+                            id="inputItemImg" accept="image/jpeg,image/png,image/webp" />
+                        <label class="custom-file-label" for="inputItemImg" data-browse="Elegir">
+                            Seleccionar nueva foto
+                        </label>
+                    </div>
+                    <% if (errors.image) { %>
+                        <div class="invalid-feedback d-block"><%= errors.image %></div>
+                    <% } %>
+                    <p class="admin-editor-help mb-0">
+                        La imagen actual se mantiene si no seleccionas otra. Tamaño máximo: 10 MB.
+                    </p>
+                </aside>
+
+                <div class="admin-editor-content">
+                    <section class="admin-editor-section">
+                        <div class="admin-editor-section-title">
+                            <span><i class="fa-solid fa-tag"></i></span>
+                            <div>
+                                <h2>Identificación</h2>
+                                <p>Nombre, código y ubicación dentro del catálogo.</p>
                             </div>
+                        </div>
 
-                            <form action="/update/<%= image._id %>" method="post" enctype="multipart/form-data">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <div class="form-group">
+                            <label for="productTitle">Nombre del producto</label>
+                            <input id="productTitle" type="text" name="title" value="<%= values.title %>"
+                                maxlength="120" placeholder="Ej: Crema hidratante Tododia"
+                                class="form-control <%= errors.title ? 'is-invalid' : '' %>" required />
+                            <% if (errors.title) { %><div class="invalid-feedback"><%= errors.title %></div><% } %>
+                        </div>
 
-                                <div class="form-group mb-4">
-                                    <label class="small font-weight-700 text-muted text-uppercase mb-2">Cambiar Imagen
-                                        (Opcional)</label>
-                                    <div class="custom-file">
-                                        <input type="file" name="image" class="custom-file-input" id="inputItemImg" />
-                                        <label class="custom-file-label rounded-pill" for="inputItemImg"
-                                            data-browse="Elegir">Seleccionar nueva foto...</label>
-                                    </div>
-                                    <small class="text-muted mt-1 d-block">Si no seleccionas nada, se mantendrá la foto
-                                        actual.</small>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Nombre del
-                                                Producto</label>
-                                            <input type="text" name="title" value="<%= image.title %>"
-                                                placeholder="Ej: Crema Hidratante Tododia"
-                                                class="form-control rounded-pill px-3" required />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Stock</label>
-                                            <input type="number" name="cantidad" value="<%= image.cantidad %>"
-                                                class="form-control rounded-pill px-3" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Precio
-                                                Anterior</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span
-                                                        class="input-group-text bg-light border-right-0 rounded-pill-left pl-3"
-                                                        style="color: #a0a0a0;">$</span>
-                                                </div>
-                                                <input type="number" name="precioAnterior"
-                                                    value="<%= image.precioAnterior || 0 %>"
-                                                    class="form-control border-left-0 rounded-pill-right pr-3" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Precio
-                                                Venta</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span
-                                                        class="input-group-text bg-white border-right-0 rounded-pill-left pl-3">$</span>
-                                                </div>
-                                                <input type="number" name="precio" value="<%= image.precio %>"
-                                                    class="form-control border-left-0 rounded-pill-right pr-3" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                class="small font-weight-700 text-muted text-uppercase">Código</label>
-                                            <input type="text" name="codigo" value="<%= image.codigo %>"
-                                                class="form-control rounded-pill px-3" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Ciclo</label>
-                                            <input type="text" name="ciclo" value="<%= image.ciclo %>"
-                                                class="form-control rounded-pill px-3" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group mb-4">
-                                    <label class="small font-weight-700 text-muted text-uppercase">Categoría</label>
-                                    <select name="categoria" class="form-control rounded-pill px-3">
-                                        <option value="<%= image.categoria %>" selected>
-                                            <%= image.categoria %>
+                        <div class="admin-editor-grid">
+                            <div class="form-group">
+                                <label for="productCode">Código</label>
+                                <input id="productCode" type="text" name="codigo" value="<%= values.codigo %>"
+                                    maxlength="60" class="form-control text-uppercase <%= errors.codigo ? 'is-invalid' : '' %>"
+                                    required />
+                                <% if (errors.codigo) { %><div class="invalid-feedback"><%= errors.codigo %></div><% } %>
+                            </div>
+                            <div class="form-group">
+                                <label for="productCategory">Categoría</label>
+                                <select id="productCategory" name="categoria" required
+                                    class="form-control <%= errors.categoria ? 'is-invalid' : '' %>">
+                                    <% categorias.forEach(function (categoria) { %>
+                                        <option value="<%= categoria.codigo %>" <%= values.categoria === categoria.codigo ? 'selected' : '' %>>
+                                            <%= categoria.nombre %>
                                         </option>
-                                        <div class="dropdown-divider"></div>
-                                        <% categorias.forEach(function (categoria) { %>
-                                            <% if(categoria.codigo !==image.categoria) { %>
-                                                <option value="<%= categoria.codigo %>">
-                                                    <%= categoria.nombre %>
-                                                </option>
-                                                <% } %>
-                                                    <% }) %>
-                                    </select>
-                                </div>
-
-                                <div class="form-group mb-4">
-                                    <label class="small font-weight-700 text-muted text-uppercase">Descripción
-                                        Detallada</label>
-                                    <textarea name="description" class="form-control"
-                                        style="border-radius: 1rem; min-height: 120px;"><%= image.description %></textarea>
-                                </div>
-
-                                <div class="form-group mb-4 d-flex align-items-center">
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" name="estado" class="custom-control-input"
-                                            id="checkVigencia" value="true" checked />
-                                        <label
-                                            class="custom-control-label small font-weight-700 text-muted text-uppercase"
-                                            for="checkVigencia">Producto Vigente</label>
-                                    </div>
-                                </div>
-
-                                <div class="form-group mt-4">
-                                    <button
-                                        class="btn btn-primary btn-block rounded-pill py-3 font-weight-800 shadow-sm">
-                                        <i class="fa-solid fa-arrows-rotate mr-2"></i> ACTUALIZAR DATOS
-                                    </button>
-                                </div>
-                            </form>
-
-                            <div class="text-center mt-3">
-                                <a href="/mode" class="text-muted small font-weight-700 text-uppercase"
-                                    style="text-decoration: none;">
-                                    <i class="fa-solid fa-chevron-left mr-1"></i> Volver al panel
-                                </a>
+                                    <% }) %>
+                                </select>
+                                <% if (errors.categoria) { %><div class="invalid-feedback"><%= errors.categoria %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productCycle">Ciclo</label>
+                                <input id="productCycle" type="text" name="ciclo" value="<%= values.ciclo %>"
+                                    maxlength="60" class="form-control" placeholder="Ej: 08/2026" />
                             </div>
                         </div>
+                    </section>
+
+                    <section class="admin-editor-section">
+                        <div class="admin-editor-section-title">
+                            <span><i class="fa-solid fa-sack-dollar"></i></span>
+                            <div>
+                                <h2>Precio y stock</h2>
+                                <p>Define el precio de venta y las unidades disponibles.</p>
+                            </div>
+                        </div>
+
+                        <div class="admin-editor-grid admin-editor-grid--three">
+                            <div class="form-group mb-0">
+                                <label for="productPrice">Precio de venta</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                    <input id="productPrice" type="number" name="precio" value="<%= values.precio %>"
+                                        min="0" step="1" class="form-control <%= errors.precio ? 'is-invalid' : '' %>" required />
+                                </div>
+                                <% if (errors.precio) { %><div class="invalid-feedback d-block"><%= errors.precio %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productOldPrice">Precio anterior</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                    <input id="productOldPrice" type="number" name="precioAnterior"
+                                        value="<%= values.precioAnterior %>" min="0" step="1"
+                                        class="form-control <%= errors.precioAnterior ? 'is-invalid' : '' %>" />
+                                </div>
+                                <% if (errors.precioAnterior) { %><div class="invalid-feedback d-block"><%= errors.precioAnterior %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productStock">Unidades en stock</label>
+                                <input id="productStock" type="number" name="cantidad" value="<%= values.cantidad %>"
+                                    min="0" step="1" class="form-control <%= errors.cantidad ? 'is-invalid' : '' %>" required />
+                                <% if (errors.cantidad) { %><div class="invalid-feedback"><%= errors.cantidad %></div><% } %>
+                            </div>
+                        </div>
+                        <p class="admin-editor-help mb-0">El precio anterior solo se muestra cuando es mayor al precio de venta.</p>
+                    </section>
+
+                    <section class="admin-editor-section">
+                        <div class="admin-editor-section-title">
+                            <span><i class="fa-solid fa-align-left"></i></span>
+                            <div>
+                                <h2>Descripción</h2>
+                                <p>Resume beneficios, uso o características importantes.</p>
+                            </div>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label for="productDescription">Descripción detallada</label>
+                            <textarea id="productDescription" name="description" class="form-control"
+                                maxlength="3000" rows="6" placeholder="Escribe una descripción clara para el cliente..."><%= values.description %></textarea>
+                        </div>
+                    </section>
+
+                    <section class="admin-editor-status">
+                        <div>
+                            <strong>Producto visible en la tienda</strong>
+                            <span>Al desactivarlo seguirá guardado, pero aparecerá como no vigente.</span>
+                        </div>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" name="estado" class="custom-control-input"
+                                id="checkVigencia" value="true" <%= values.estado ? 'checked' : '' %> />
+                            <label class="custom-control-label" for="checkVigencia">Vigente</label>
+                        </div>
+                    </section>
+
+                    <div class="admin-editor-actions">
+                        <a href="/mode" class="btn btn-light rounded-pill px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar cambios
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
+    </main>
 
-        <style>
-            .rounded-pill-left {
-                border-top-left-radius: 50rem;
-                border-bottom-left-radius: 50rem;
+    <script>
+        const imageInput = document.getElementById("inputItemImg");
+        const imagePreview = document.getElementById("productImagePreview");
+        const originalImage = imagePreview.src;
+        let previewUrl;
+
+        imageInput.addEventListener("change", function () {
+            const file = this.files[0];
+            const label = this.nextElementSibling;
+
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+            if (file && file.size > 10 * 1024 * 1024) {
+                alert("La imagen es demasiado pesada. El límite máximo permitido es de 10 MB.");
+                this.value = "";
+                imagePreview.src = originalImage;
+                if (label) label.textContent = "Seleccionar nueva foto";
+                return;
             }
 
-            .rounded-pill-right {
-                border-top-right-radius: 50rem;
-                border-bottom-right-radius: 50rem;
+            if (file) {
+                previewUrl = URL.createObjectURL(file);
+                imagePreview.src = previewUrl;
+                if (label) label.textContent = file.name;
+            } else {
+                imagePreview.src = originalImage;
+                if (label) label.textContent = "Seleccionar nueva foto";
             }
-
-            .custom-file-label::after {
-                border-top-right-radius: 50rem;
-                border-bottom-right-radius: 50rem;
-            }
-
-            .opacity-50 {
-                opacity: 0.6;
-            }
-        </style>
-        <script>
-            // Validación de tamaño de archivo (10MB)
-            document.getElementById('inputItemImg').addEventListener('change', function () {
-                const file = this.files[0];
-                if (file && file.size > 10 * 1024 * 1024) {
-                    alert('La imagen es demasiado pesada. El límite máximo permitido es de 10MB.');
-                    this.value = ''; // Limpiar el input
-                    const label = this.nextElementSibling;
-                    if (label) label.innerText = 'Seleccionar nueva foto...';
-                } else if (file) {
-                    // Actualizar label con el nombre del archivo
-                    const label = this.nextElementSibling;
-                    if (label) label.innerText = file.name;
-                }
-            });
-        </script>
+        });
+    </script>
 </body>
 
 </html>

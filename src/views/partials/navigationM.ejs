@@ -1,69 +1,60 @@
-<nav class="navbar navbar-expand-md navbar-dark navbar-admin sticky-top" id="adminNav">
-    <a class="navbar-brand" href="/mode">
+<% const adminPath = typeof currentPath === 'string' ? currentPath : ''; %>
+<% const catalogIsActive = adminPath === '/mode' || adminPath.startsWith('/update/'); %>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-admin sticky-top" id="adminNav">
+    <a class="navbar-brand" href="/mode" aria-label="Ir al catálogo administrativo">
         <i class="fa-solid fa-leaf navbar-brand-icon"></i>
         <span class="navbar-brand-text">Solnatura</span>
-        <span class="badge badge-admin ml-2">Admin</span>
+        <span class="badge badge-admin ml-2">Panel</span>
     </a>
+
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAdmin"
-        aria-controls="navbarNavAdmin" aria-expanded="false" aria-label="Toggle navigation">
+        aria-controls="navbarNavAdmin" aria-expanded="false" aria-label="Abrir menú de administración">
         <span class="navbar-toggler-icon"></span>
     </button>
+
     <div class="collapse navbar-collapse" id="navbarNavAdmin">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="/mode" id="adminDropdown" role="button" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fa-solid fa-tags"></i> Categorías
-                </a>
-                <div class="dropdown-menu dropdown-menu-premium" aria-labelledby="adminDropdown">
-                    <a class="dropdown-item dropdown-item-all" href="/mode">
-                        <i class="fa-solid fa-border-all"></i> Todos los productos
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <% categorias.forEach(function (categoria) { %>
-                        <a class="dropdown-item" href="/mode?categoria=<%= encodeURIComponent(categoria.codigo) %>">
-                            <i class="fa-solid fa-circle-dot text-success small"></i>
-                            <%= categoria.nombre %>
-                        </a>
-                        <% }) %>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/modecat">
-                    <i class="fa-solid fa-folder-plus"></i> Nueva Categoría
+        <ul class="navbar-nav admin-navbar-links ml-lg-auto">
+            <li class="nav-item <%= catalogIsActive ? 'active' : '' %>">
+                <a class="nav-link admin-nav-link" href="/mode" <% if (catalogIsActive) { %>aria-current="page"<% } %>>
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Catálogo</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/upload">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir Producto
+            <li class="nav-item <%= adminPath === '/upload' ? 'active' : '' %>">
+                <a class="nav-link admin-nav-link admin-nav-link--primary" href="/upload"
+                    <% if (adminPath === '/upload') { %>aria-current="page"<% } %>>
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Nuevo producto</span>
+                </a>
+            </li>
+            <li class="nav-item <%= adminPath === '/modecat' ? 'active' : '' %>">
+                <a class="nav-link admin-nav-link" href="/modecat" <% if (adminPath === '/modecat') { %>aria-current="page"<% } %>>
+                    <i class="fa-solid fa-folder-tree"></i>
+                    <span>Categorías</span>
+                </a>
+            </li>
+            <li class="nav-item <%= adminPath === '/mode/auditoria' ? 'active' : '' %>">
+                <a class="nav-link admin-nav-link" href="/mode/auditoria"
+                    <% if (adminPath === '/mode/auditoria') { %>aria-current="page"<% } %>>
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Historial</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/mode/auditoria">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Auditoría
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/" target="_blank">
-                    <i class="fa-solid fa-eye"></i> Ver tienda
+                <a class="nav-link admin-nav-link admin-nav-link--external" href="/" target="_blank"
+                    rel="noopener noreferrer">
+                    <i class="fa-solid fa-store"></i>
+                    <span>Ver tienda</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square admin-nav-external-icon"></i>
                 </a>
             </li>
         </ul>
-        <form action="/mode" method="get" class="form-inline my-2 my-lg-0 search-form">
-            <div class="input-group search-group">
-                <input class="form-control search-input" type="search" name="q" placeholder="Buscar producto..."
-                    value="<%= typeof filters !== 'undefined' ? filters.q : '' %>" aria-label="Buscar producto" />
-                <div class="input-group-append">
-                    <button class="btn btn-search" type="submit">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
-                </div>
-            </div>
-        </form>
-        <form action="/admin/logout" method="post" class="ml-md-2 my-2 my-md-0">
+
+        <form action="/admin/logout" method="post" class="admin-logout-form ml-lg-3 my-2 my-lg-0">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-            <button type="submit" class="btn btn-outline-light btn-sm rounded-pill px-3">
-                <i class="fa-solid fa-right-from-bracket mr-1"></i> Salir
+            <button type="submit" class="btn admin-logout-button rounded-pill">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Cerrar sesión</span>
             </button>
         </form>
     </div>

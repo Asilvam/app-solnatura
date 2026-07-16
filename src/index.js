@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
+const { unlink } = require("fs-extra");
 const { loadAdminSession } = require("./middlewares/adminAuth");
 
 const path = require("path");
@@ -24,6 +25,7 @@ app.use(loadAdminSession);
 
 // Global variables
 app.use((req, res, next) => {
+  res.locals.currentPath = req.path;
   next();
 });
 
@@ -35,14 +37,26 @@ app.use(require("./routes/index"));
 app.use(express.static(path.join(__dirname, "public")));
 
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${req.method} ${req.path} →`, err.stack);
+app.use(async (err, req, res, next) => {
+    console.error(`[ERROR] ${req.method} ${req.path} →`, err.stack);
+
+    if (req.file && req.file.path) {
+        try {
+            await unlink(req.file.path);
+        } catch (cleanupError) {
+            if (cleanupError.code !== "ENOENT") {
+                console.error("No se pudo limpiar el archivo temporal:", cleanupError.message);
+            }
+        }
+    }
 
   let message = err.userMessage || "Ocurrió un error inesperado. Por favor, intenta nuevamente.";
 
   // Manejo específico para errores de Multer (tamaño de archivo)
   if (err.code === 'LIMIT_FILE_SIZE') {
     message = "La imagen es demasiado pesada. El límite máximo es de 10MB.";
+  } else if (err.code === 'INVALID_IMAGE_TYPE') {
+    message = "La imagen debe estar en formato JPG, PNG o WebP.";
   }
 
   res.status(err.status || 500).send(`

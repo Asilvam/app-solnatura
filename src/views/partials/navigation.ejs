@@ -3,32 +3,6 @@
         <i class="fa-solid fa-leaf navbar-brand-icon"></i>
         <span class="navbar-brand-text">Solnatura</span>
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-600" href="/" id="navbarDropdownMenuLink" role="button"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa-solid fa-tags"></i> Categorías
-                </a>
-                <div class="dropdown-menu dropdown-menu-premium" aria-labelledby="navbarDropdownMenuLink">
-                    <a class="dropdown-item dropdown-item-all" href="/">
-                        <i class="fa-solid fa-border-all"></i> Todos los productos
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <% categorias.forEach(function (categoria) { %>
-                        <a class="dropdown-item" href="/?categoria=<%= encodeURIComponent(categoria.codigo) %>">
-                            <i class="fa-solid fa-circle-dot text-success small"></i>
-                            <%= categoria.nombre %>
-                        </a>
-                        <% }) %>
-                </div>
-            </li>
-        </ul>
-    </div>
 </nav>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"

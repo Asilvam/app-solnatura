@@ -23,6 +23,12 @@
                 </a>
             </div>
 
+            <% if (notice) { %>
+                <div class="alert alert-info admin-notice" role="status">
+                    <i class="fa-solid fa-circle-info mr-2"></i><%= notice %>
+                </div>
+            <% } %>
+
             <section class="admin-summary-grid mb-4" aria-label="Resumen del catálogo">
                 <a href="/mode" class="admin-summary-card admin-summary-card--total">
                     <span class="admin-summary-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
@@ -141,6 +147,35 @@
                 <% } %>
             </div>
 
+            <% if (images.length > 0) { %>
+                <form id="bulkProductForm" action="/mode/bulk" method="post" class="admin-bulk-bar mb-3">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
+                    <label class="admin-select-all mb-0" for="selectAllProducts">
+                        <input id="selectAllProducts" type="checkbox" />
+                        <span><strong id="selectedProductCount">0</strong> seleccionados</span>
+                    </label>
+                    <select id="bulkAction" name="bulkAction" class="form-control form-control-sm admin-bulk-action" required>
+                        <option value="">Acción masiva…</option>
+                        <option value="activar">Marcar vigentes</option>
+                        <option value="desactivar">Marcar no vigentes</option>
+                        <option value="categoria">Cambiar categoría</option>
+                    </select>
+                    <select id="bulkCategory" name="bulkCategory" class="form-control form-control-sm admin-bulk-category" disabled>
+                        <option value="">Nueva categoría…</option>
+                        <% categorias.forEach(function (categoria) { %>
+                            <option value="<%= categoria.codigo %>"><%= categoria.nombre %></option>
+                        <% }) %>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Aplicar
+                    </button>
+                    <a href="<%= exportUrl %>" class="btn btn-outline-primary btn-sm rounded-pill px-3 admin-export-link">
+                        <i class="fa-solid fa-file-excel mr-1"></i> Exportar Excel
+                    </a>
+                </form>
+            <% } %>
+
             <% if (images.length === 0) { %>
                 <div class="admin-empty-state">
                     <i class="fa-solid fa-filter-circle-xmark"></i>
@@ -151,24 +186,52 @@
             <% } else { %>
                 <div class="catalogo-grid">
                     <% images.forEach(function (image) { %>
-                        <article class="card animate__animated animate__fadeInUp">
+                        <article class="card admin-product-card animate__animated animate__fadeInUp"
+                            data-low-stock-limit="<%= lowStockLimit %>">
                             <div class="card-img-wrapper">
                                 <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>" />
-                                <span class="position-absolute badge badge-light shadow-sm"
-                                    style="top: 10px; left: 10px; z-index: 2; border-radius: 20px; font-weight: 700; color: var(--morado-principal);">
-                                    <%= image.categoria %>
+                                <span class="admin-category-line"
+                                    title="<%= categoryNames[image.categoria] || image.categoria %>">
+                                    <%= categoryNames[image.categoria] || image.categoria %>
                                 </span>
+                                <label class="admin-product-selector" title="Seleccionar producto">
+                                    <input type="checkbox" class="product-select" name="productIds"
+                                        value="<%= image._id %>" form="bulkProductForm"
+                                        aria-label="Seleccionar <%= image.title %>" />
+                                    <span><i class="fa-solid fa-check"></i></span>
+                                </label>
                                 <% if (!image.estado) { %>
                                     <span class="badge-no-vigente-diagonal">No vigente</span>
                                 <% } %>
                             </div>
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title text-truncate"><%= image.title %></h5>
-                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="admin-card-metrics mb-2">
                                     <span class="badge-precio">$ <%= (image.precio || 0).toLocaleString("es-CL") %></span>
-                                    <span class="badge-stock <%= image.cantidad <= 0 ? "badge-stock--empty" : (image.cantidad <= lowStockLimit ? "badge-stock--low" : "") %>">
-                                        <i class="fa-solid fa-boxes-stacked"></i> Stock: <%= image.cantidad || 0 %>
-                                    </span>
+                                    <div class="admin-card-stock-control">
+                                        <span class="badge-stock <%= image.cantidad <= 0 ? "badge-stock--empty" : (image.cantidad <= lowStockLimit ? "badge-stock--low" : "") %>"
+                                            data-stock-label>
+                                            <i class="fa-solid fa-boxes-stacked"></i> Stock: <%= image.cantidad || 0 %>
+                                        </span>
+                                        <div class="admin-card-stock-buttons" aria-label="Ajustar stock de <%= image.title %>">
+                                            <form action="/mode/<%= image._id %>/stock" method="post" class="admin-stock-form">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                                <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
+                                                <input type="hidden" name="delta" value="-1" />
+                                                <button type="submit" class="btn btn-outline-warning btn-sm"
+                                                    aria-label="Restar una unidad a <%= image.title %>"
+                                                    <%= image.cantidad <= 0 ? "disabled" : "" %>>−</button>
+                                            </form>
+                                            <form action="/mode/<%= image._id %>/stock" method="post" class="admin-stock-form">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                                <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
+                                                <input type="hidden" name="delta" value="1" />
+                                                <button type="submit" class="btn btn-outline-success btn-sm"
+                                                    aria-label="Sumar una unidad a <%= image.title %>">+</button>
+                                            </form>
+                                        </div>
+                                        <small class="admin-stock-feedback" role="status" aria-live="polite"></small>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-between small text-muted mb-2">
                                     <span><i class="fa-solid fa-barcode"></i> <%= image.codigo %></span>
@@ -182,19 +245,28 @@
                                         </a>
                                     </div>
                                     <div class="col-6 pl-1">
-                                        <a href="/image/<%= image._id %>" class="btn btn-outline-danger btn-block btn-sm rounded-pill">
+                                        <button type="button"
+                                            class="btn btn-outline-danger btn-block btn-sm rounded-pill admin-delete-trigger"
+                                            data-toggle="modal" data-target="#deleteProductModal"
+                                            data-product-id="<%= image._id %>"
+                                            data-product-title="<%= image.title %>"
+                                            data-product-code="<%= image.codigo %>"
+                                            data-product-image="<%= image.path %>">
                                             <i class="fa-solid fa-trash-can"></i> Borrar
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
-                                <form action="/mode/<%= image._id %>/estado" method="post" class="mt-2">
+                                <form action="/mode/<%= image._id %>/estado" method="post" class="mt-2 admin-status-form">
                                     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                                    <input type="hidden" name="estado" value="<%= image.estado ? "false" : "true" %>" />
+                                    <input type="hidden" name="estado" value="<%= image.estado ? "false" : "true" %>"
+                                        data-state-input />
                                     <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
-                                    <button type="submit" class="btn btn-block btn-sm rounded-pill <%= image.estado ? "btn-outline-warning" : "btn-outline-success" %>">
+                                    <button type="submit" data-state-button
+                                        class="btn btn-block btn-sm rounded-pill <%= image.estado ? "btn-outline-warning" : "btn-outline-success" %>">
                                         <i class="fa-solid <%= image.estado ? "fa-eye-slash" : "fa-eye" %> mr-1"></i>
                                         <%= image.estado ? "Marcar no vigente" : "Activar producto" %>
                                     </button>
+                                    <small class="admin-status-feedback" role="status" aria-live="polite"></small>
                                 </form>
                             </div>
                         </article>
@@ -226,6 +298,270 @@
                 </nav>
             <% } %>
         </main>
+
+        <div class="modal fade" id="deleteProductModal" tabindex="-1" role="dialog"
+            aria-labelledby="deleteProductModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content admin-delete-modal">
+                    <div class="modal-header admin-delete-modal-header">
+                        <div class="admin-delete-modal-heading">
+                            <span class="admin-delete-modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                            <div>
+                                <small>Confirmar eliminación</small>
+                                <h5 class="modal-title" id="deleteProductModalTitle">¿Borrar este producto?</h5>
+                            </div>
+                        </div>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="admin-delete-product-preview">
+                            <div class="admin-delete-product-image">
+                                <img id="deleteProductImage" src="" alt="" />
+                            </div>
+                            <div class="admin-delete-product-copy">
+                                <strong id="deleteProductName"></strong>
+                                <span id="deleteProductCode"></span>
+                            </div>
+                        </div>
+                        <div class="admin-delete-warning mb-0">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            <p>
+                                Se eliminarán permanentemente el producto de la base de datos y su imagen de Cloudinary.
+                                <strong>Esta acción no se puede deshacer.</strong>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer admin-delete-modal-footer">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">
+                            Cancelar
+                        </button>
+                        <form id="deleteProductForm" method="post">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <input type="hidden" name="returnTo" value="<%= currentModeUrl %>" />
+                            <button type="submit" class="btn btn-danger rounded-pill px-4">
+                                <i class="fa-solid fa-trash-can mr-2"></i>Sí, borrar permanentemente
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const stockForms = Array.from(document.querySelectorAll('.admin-stock-form'));
+                const stockFeedbackTimers = new WeakMap();
+
+                stockForms.forEach((form) => {
+                    form.addEventListener('submit', async function (event) {
+                        event.preventDefault();
+
+                        const card = form.closest('.admin-product-card');
+                        const control = form.closest('.admin-card-stock-control');
+                        const badge = control.querySelector('[data-stock-label]');
+                        const feedback = control.querySelector('.admin-stock-feedback');
+                        const buttons = Array.from(control.querySelectorAll('button'));
+                        const decrementButton = control.querySelector('input[value="-1"]').closest('form').querySelector('button');
+                        const lowStockLimit = Number(card.dataset.lowStockLimit) || 5;
+
+                        buttons.forEach((button) => { button.disabled = true; });
+                        control.setAttribute('aria-busy', 'true');
+                        feedback.textContent = '';
+                        feedback.classList.remove('is-error');
+
+                        try {
+                            const response = await fetch(form.action, {
+                                method: 'POST',
+                                body: new URLSearchParams(new FormData(form)),
+                                headers: {
+                                    Accept: 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            });
+                            const result = await response.json().catch(() => ({
+                                ok: false,
+                                message: 'El servidor devolvió una respuesta inesperada.',
+                            }));
+                            if (!response.ok || !result.ok) {
+                                throw new Error(result.message || 'No se pudo actualizar el stock.');
+                            }
+
+                            const stock = Number(result.stock) || 0;
+                            badge.innerHTML = `<i class="fa-solid fa-boxes-stacked"></i> Stock: ${stock}`;
+                            badge.classList.toggle('badge-stock--empty', stock <= 0);
+                            badge.classList.toggle('badge-stock--low', stock > 0 && stock <= lowStockLimit);
+                            decrementButton.disabled = stock <= 0;
+                            updateCardStatus(card, result.estado);
+                            feedback.textContent = 'Actualizado';
+
+                            const previousTimer = stockFeedbackTimers.get(feedback);
+                            if (previousTimer) window.clearTimeout(previousTimer);
+                            const feedbackTimer = window.setTimeout(() => {
+                                if (feedback.textContent === 'Actualizado') feedback.textContent = '';
+                            }, 1400);
+                            stockFeedbackTimers.set(feedback, feedbackTimer);
+                        } catch (error) {
+                            const previousTimer = stockFeedbackTimers.get(feedback);
+                            if (previousTimer) window.clearTimeout(previousTimer);
+                            feedback.textContent = error.message;
+                            feedback.classList.add('is-error');
+                        } finally {
+                            buttons.forEach((button) => { button.disabled = false; });
+                            const currentStock = Number(badge.textContent.replace(/\D/g, '')) || 0;
+                            decrementButton.disabled = currentStock <= 0;
+                            control.removeAttribute('aria-busy');
+                        }
+                    });
+                });
+
+                function updateCardStatus(card, isActive) {
+                    const imageWrapper = card.querySelector('.card-img-wrapper');
+                    let inactiveRibbon = imageWrapper.querySelector('.badge-no-vigente-diagonal');
+                    const stateInput = card.querySelector('[data-state-input]');
+                    const stateButton = card.querySelector('[data-state-button]');
+
+                    if (isActive && inactiveRibbon) {
+                        inactiveRibbon.remove();
+                    } else if (!isActive && !inactiveRibbon) {
+                        inactiveRibbon = document.createElement('span');
+                        inactiveRibbon.className = 'badge-no-vigente-diagonal';
+                        inactiveRibbon.textContent = 'No vigente';
+                        imageWrapper.appendChild(inactiveRibbon);
+                    }
+
+                    stateInput.value = isActive ? 'false' : 'true';
+                    stateButton.classList.toggle('btn-outline-warning', isActive);
+                    stateButton.classList.toggle('btn-outline-success', !isActive);
+                    stateButton.innerHTML = isActive
+                        ? '<i class="fa-solid fa-eye-slash mr-1"></i> Marcar no vigente'
+                        : '<i class="fa-solid fa-eye mr-1"></i> Activar producto';
+                }
+
+                const statusForms = Array.from(document.querySelectorAll('.admin-status-form'));
+                const statusFeedbackTimers = new WeakMap();
+
+                statusForms.forEach((form) => {
+                    form.addEventListener('submit', async function (event) {
+                        event.preventDefault();
+
+                        const card = form.closest('.admin-product-card');
+                        const button = form.querySelector('[data-state-button]');
+                        const feedback = form.querySelector('.admin-status-feedback');
+
+                        button.disabled = true;
+                        form.setAttribute('aria-busy', 'true');
+                        feedback.textContent = '';
+                        feedback.classList.remove('is-error');
+
+                        try {
+                            const response = await fetch(form.action, {
+                                method: 'POST',
+                                body: new URLSearchParams(new FormData(form)),
+                                headers: {
+                                    Accept: 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            });
+                            const result = await response.json().catch(() => ({
+                                ok: false,
+                                message: 'El servidor devolvió una respuesta inesperada.',
+                            }));
+                            if (!response.ok || !result.ok) {
+                                throw new Error(result.message || 'No se pudo cambiar la vigencia.');
+                            }
+
+                            updateCardStatus(card, result.estado);
+                            feedback.textContent = result.estado ? 'Producto vigente' : 'Producto no vigente';
+
+                            const previousTimer = statusFeedbackTimers.get(feedback);
+                            if (previousTimer) window.clearTimeout(previousTimer);
+                            const feedbackTimer = window.setTimeout(() => {
+                                feedback.textContent = '';
+                            }, 1600);
+                            statusFeedbackTimers.set(feedback, feedbackTimer);
+                        } catch (error) {
+                            const previousTimer = statusFeedbackTimers.get(feedback);
+                            if (previousTimer) window.clearTimeout(previousTimer);
+                            feedback.textContent = error.message;
+                            feedback.classList.add('is-error');
+                        } finally {
+                            button.disabled = false;
+                            form.removeAttribute('aria-busy');
+                        }
+                    });
+                });
+
+                const deleteForm = document.getElementById('deleteProductForm');
+                const deleteProductName = document.getElementById('deleteProductName');
+                const deleteProductCode = document.getElementById('deleteProductCode');
+                const deleteProductImage = document.getElementById('deleteProductImage');
+
+                document.querySelectorAll('.admin-delete-trigger').forEach((button) => {
+                    button.addEventListener('click', function () {
+                        const productId = button.dataset.productId;
+                        const productTitle = button.dataset.productTitle;
+
+                        deleteForm.action = `/image/${encodeURIComponent(productId)}/delete`;
+                        deleteProductName.textContent = productTitle;
+                        deleteProductCode.textContent = `Código: ${button.dataset.productCode}`;
+                        deleteProductImage.src = button.dataset.productImage;
+                        deleteProductImage.alt = productTitle;
+                    });
+                });
+
+                const bulkForm = document.getElementById('bulkProductForm');
+                if (!bulkForm) return;
+
+                const selectAll = document.getElementById('selectAllProducts');
+                const selections = Array.from(document.querySelectorAll('.product-select'));
+                const selectedCount = document.getElementById('selectedProductCount');
+                const bulkAction = document.getElementById('bulkAction');
+                const bulkCategory = document.getElementById('bulkCategory');
+
+                function updateSelectionState() {
+                    const count = selections.filter((checkbox) => checkbox.checked).length;
+                    selections.forEach((checkbox) => {
+                        const card = checkbox.closest('.admin-product-card');
+                        if (card) card.classList.toggle('is-selected', checkbox.checked);
+                    });
+                    selectedCount.textContent = count;
+                    selectAll.checked = count > 0 && count === selections.length;
+                    selectAll.indeterminate = count > 0 && count < selections.length;
+                    document.body.classList.toggle('admin-selection-active', count > 0);
+                }
+
+                selectAll.addEventListener('change', function () {
+                    selections.forEach((checkbox) => {
+                        checkbox.checked = selectAll.checked;
+                    });
+                    updateSelectionState();
+                });
+
+                selections.forEach((checkbox) => checkbox.addEventListener('change', updateSelectionState));
+
+                bulkAction.addEventListener('change', function () {
+                    const needsCategory = bulkAction.value === 'categoria';
+                    bulkCategory.disabled = !needsCategory;
+                    bulkCategory.required = needsCategory;
+                    if (!needsCategory) bulkCategory.value = '';
+                });
+
+                bulkForm.addEventListener('submit', function (event) {
+                    const count = selections.filter((checkbox) => checkbox.checked).length;
+                    if (count === 0) {
+                        event.preventDefault();
+                        alert('Selecciona al menos un producto.');
+                        return;
+                    }
+
+                    if (!confirm(`¿Aplicar esta acción a ${count} producto${count === 1 ? '' : 's'}?`)) {
+                        event.preventDefault();
+                    }
+                });
+            });
+        </script>
 </body>
 
 </html>

@@ -5,171 +5,267 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Subir Producto</title>
+    <title>Nuevo producto | Solnatura</title>
     <%- include("partials/head") -%>
 </head>
 
 <body>
     <%- include("partials/navigationM") %>
 
-        <div class="container p-4">
-            <div class="row justify-content-center">
-                <div class="col-lg-6 col-md-8">
-                    <div class="card shadow-sm border-0" style="border-radius: 1.25rem; overflow: hidden;">
-                        <div class="card-header bg-success text-white text-center py-4 border-0">
-                            <h3 class="font-weight-800 mb-0"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Nuevo
-                                Producto</h3>
+    <main class="container admin-product-editor py-4 py-lg-5">
+        <header class="admin-editor-header mb-4">
+            <div>
+                <span class="admin-editor-eyebrow">Administración de productos</span>
+                <h1>Nuevo producto</h1>
+                <p>Completa la información que verá el cliente en la tienda.</p>
+            </div>
+            <a href="/mode" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fa-solid fa-arrow-left mr-2"></i>Volver al catálogo
+            </a>
+        </header>
+
+        <% if (Object.keys(errors).length > 0) { %>
+            <div class="alert alert-danger admin-editor-alert" role="alert">
+                <i class="fa-solid fa-circle-exclamation mr-2"></i>
+                <strong>No pudimos guardar el producto.</strong> Revisa los campos marcados.
+            </div>
+        <% } %>
+
+        <% if (typeof notice !== 'undefined' && notice) { %>
+            <div class="alert alert-success admin-notice" role="status">
+                <i class="fa-solid fa-circle-check mr-2"></i><%= notice %>
+                <a href="/mode" class="alert-link ml-2">Ver catálogo</a>
+            </div>
+        <% } %>
+
+        <form action="/upload" method="post" enctype="multipart/form-data" class="admin-editor-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+            <div class="admin-editor-layout">
+                <aside class="admin-editor-media-card admin-editor-media-card--new">
+                    <div class="admin-editor-media-heading">
+                        <span>Imagen del producto</span>
+                        <small>JPG, PNG o WEBP</small>
+                    </div>
+                    <div class="admin-editor-image-shell admin-editor-image-shell--empty" id="productImageShell">
+                        <div class="admin-editor-image-placeholder" id="productImagePlaceholder">
+                            <span><i class="fa-solid fa-image"></i></span>
+                            <strong>Agrega una imagen</strong>
+                            <small>Se mostrará una vista previa aquí</small>
                         </div>
-                        <div class="card-body p-4 p-md-5">
-                            <form action="/upload" method="post" enctype="multipart/form-data">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <img id="productImagePreview" src="" alt="Vista previa del producto" hidden />
+                    </div>
+                    <div class="custom-file mt-3">
+                        <input type="file" name="image"
+                            class="custom-file-input <%= errors.image ? 'is-invalid' : '' %>"
+                            id="inputItemImg" accept="image/jpeg,image/png,image/webp" required />
+                        <label class="custom-file-label" for="inputItemImg" data-browse="Elegir">
+                            Seleccionar una foto
+                        </label>
+                    </div>
+                    <% if (errors.image) { %>
+                        <div class="invalid-feedback d-block"><%= errors.image %></div>
+                    <% } %>
+                    <p class="admin-editor-help mb-0">
+                        Usa una imagen nítida, preferentemente cuadrada y con fondo limpio. Máximo 10 MB.
+                    </p>
+                </aside>
 
-                                <div class="form-group mb-4">
-                                    <label class="small font-weight-700 text-muted text-uppercase mb-2">Imagen del
-                                        Producto</label>
-                                    <div class="custom-file">
-                                        <input type="file" name="image" class="custom-file-input" id="inputItemImg"
-                                            lang="es" autofocus required />
-                                        <label class="custom-file-label rounded-pill" for="inputItemImg"
-                                            data-browse="Elegir">Seleccionar archivo...</label>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Nombre del
-                                                Producto</label>
-                                            <input type="text" name="title" placeholder="Ej: Crema Hidratante Tododia"
-                                                class="form-control rounded-pill px-3" required />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Stock
-                                                Inicial</label>
-                                            <input type="number" name="cantidad" placeholder="0"
-                                                class="form-control rounded-pill px-3" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Precio
-                                                Anterior</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span
-                                                        class="input-group-text bg-light border-right-0 rounded-pill-left pl-3"
-                                                        style="color: #a0a0a0;">$</span>
-                                                </div>
-                                                <input type="number" name="precioAnterior" placeholder="0"
-                                                    class="form-control border-left-0 rounded-pill-right pr-3" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Precio
-                                                Venta</label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span
-                                                        class="input-group-text bg-white border-right-0 rounded-pill-left pl-3">$</span>
-                                                </div>
-                                                <input type="number" name="precio" placeholder="0"
-                                                    class="form-control border-left-0 rounded-pill-right pr-3" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                class="small font-weight-700 text-muted text-uppercase">Código</label>
-                                            <input type="text" name="codigo" placeholder="Ej: 12345"
-                                                class="form-control rounded-pill px-3" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label class="small font-weight-700 text-muted text-uppercase">Ciclo</label>
-                                            <input type="text" name="ciclo" placeholder="Ej: 05/2024"
-                                                class="form-control rounded-pill px-3" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group mb-4">
-                                    <label class="small font-weight-700 text-muted text-uppercase">Categoría</label>
-                                    <select name="categoria" class="form-control rounded-pill px-3"
-                                        id="FormControlSelect1">
-                                        <option selected disabled>Seleccionar...</option>
-                                        <% categorias.forEach(function (categoria) { %>
-                                            <option value="<%= categoria.codigo %>">
-                                                <%= categoria.nombre %>
-                                            </option>
-                                            <% }) %>
-                                    </select>
-                                </div>
-
-                                <div class="form-group mb-4">
-                                    <label class="small font-weight-700 text-muted text-uppercase">Descripción
-                                        Detallada</label>
-                                    <textarea name="description"
-                                        placeholder="Describe los beneficios, aromas o componentes..."
-                                        class="form-control" style="border-radius: 1rem; min-height: 100px;"></textarea>
-                                </div>
-
-                                <div class="form-group mt-4">
-                                    <button
-                                        class="btn btn-success btn-block rounded-pill py-3 font-weight-800 shadow-sm">
-                                        <i class="fa-solid fa-floppy-disk mr-2"></i> GUARDAR PRODUCTO
-                                    </button>
-                                </div>
-                            </form>
+                <div class="admin-editor-content">
+                    <section class="admin-editor-section">
+                        <div class="admin-editor-section-title">
+                            <span><i class="fa-solid fa-tag"></i></span>
+                            <div>
+                                <h2>Identificación</h2>
+                                <p>Nombre, código y ubicación dentro del catálogo.</p>
+                            </div>
                         </div>
+
+                        <div class="form-group">
+                            <label for="productTitle">Nombre del producto</label>
+                            <input id="productTitle" type="text" name="title" value="<%= values.title %>"
+                                maxlength="120" placeholder="Ej: Crema hidratante Tododia"
+                                class="form-control <%= errors.title ? 'is-invalid' : '' %>" required />
+                            <% if (errors.title) { %><div class="invalid-feedback"><%= errors.title %></div><% } %>
+                        </div>
+
+                        <div class="admin-editor-grid">
+                            <div class="form-group mb-0">
+                                <label for="productCode">Código del producto</label>
+                                <input id="productCode" type="text" name="codigo" value="<%= values.codigo %>"
+                                    maxlength="60" placeholder="Ej: NAT-1001"
+                                    class="form-control text-uppercase <%= errors.codigo ? 'is-invalid' : '' %>" required />
+                                <% if (errors.codigo) { %><div class="invalid-feedback"><%= errors.codigo %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productCategory">Categoría</label>
+                                <select id="productCategory" name="categoria" required
+                                    class="form-control <%= errors.categoria ? 'is-invalid' : '' %>">
+                                    <option value="" <%= values.categoria ? '' : 'selected' %> disabled>Seleccionar categoría</option>
+                                    <% categorias.forEach(function (categoria) { %>
+                                        <option value="<%= categoria.codigo %>" <%= values.categoria === categoria.codigo ? 'selected' : '' %>>
+                                            <%= categoria.nombre %>
+                                        </option>
+                                    <% }) %>
+                                </select>
+                                <% if (errors.categoria) { %><div class="invalid-feedback"><%= errors.categoria %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productCycle">Ciclo</label>
+                                <input id="productCycle" type="text" name="ciclo" value="<%= values.ciclo %>"
+                                    maxlength="60" class="form-control" placeholder="Ej: 08/2026" />
+                            </div>
+                        </div>
+                        <div class="admin-editor-inline-help">
+                            <span><i class="fa-solid fa-circle-info"></i> El código debe ser único.</span>
+                            <a href="/modecat"><i class="fa-solid fa-folder-plus"></i> Administrar categorías</a>
+                        </div>
+                    </section>
+
+                    <section class="admin-editor-section">
+                        <div class="admin-editor-section-title">
+                            <span><i class="fa-solid fa-sack-dollar"></i></span>
+                            <div>
+                                <h2>Precio y stock inicial</h2>
+                                <p>Define el precio de venta y las primeras unidades disponibles.</p>
+                            </div>
+                        </div>
+
+                        <div class="admin-editor-grid admin-editor-grid--three">
+                            <div class="form-group mb-0">
+                                <label for="productPrice">Precio de venta</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                    <input id="productPrice" type="number" name="precio" value="<%= values.precio %>"
+                                        min="0" step="1" placeholder="0"
+                                        class="form-control <%= errors.precio ? 'is-invalid' : '' %>" required />
+                                </div>
+                                <% if (errors.precio) { %><div class="invalid-feedback d-block"><%= errors.precio %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productOldPrice">Precio anterior</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                    <input id="productOldPrice" type="number" name="precioAnterior"
+                                        value="<%= values.precioAnterior %>" min="0" step="1" placeholder="0"
+                                        class="form-control <%= errors.precioAnterior ? 'is-invalid' : '' %>" />
+                                </div>
+                                <% if (errors.precioAnterior) { %><div class="invalid-feedback d-block"><%= errors.precioAnterior %></div><% } %>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="productStock">Stock inicial</label>
+                                <input id="productStock" type="number" name="cantidad" value="<%= values.cantidad %>"
+                                    min="0" step="1" placeholder="0"
+                                    class="form-control <%= errors.cantidad ? 'is-invalid' : '' %>" required />
+                                <% if (errors.cantidad) { %><div class="invalid-feedback"><%= errors.cantidad %></div><% } %>
+                            </div>
+                        </div>
+                        <p class="admin-editor-help mb-0">El precio anterior crea una oferta solo cuando es mayor al precio de venta.</p>
+                    </section>
+
+                    <section class="admin-editor-section">
+                        <div class="admin-editor-section-title">
+                            <span><i class="fa-solid fa-align-left"></i></span>
+                            <div>
+                                <h2>Descripción</h2>
+                                <p>Resume beneficios, uso o características importantes.</p>
+                            </div>
+                        </div>
+                        <div class="form-group mb-0">
+                            <div class="admin-editor-label-row">
+                                <label for="productDescription">Descripción detallada</label>
+                                <small><span id="descriptionCount">0</span>/3000</small>
+                            </div>
+                            <textarea id="productDescription" name="description" class="form-control"
+                                maxlength="3000" rows="6"
+                                placeholder="Describe beneficios, aromas, componentes o forma de uso..."><%= values.description %></textarea>
+                        </div>
+                    </section>
+
+                    <section class="admin-editor-status admin-editor-status--automatic">
+                        <div>
+                            <strong>Vigencia inicial automática</strong>
+                            <span>Con stock 0 se guardará como no vigente; con stock mayor a 0 quedará vigente.</span>
+                        </div>
+                        <span class="admin-editor-status-badge" id="newProductStatus">
+                            <i class="fa-solid fa-circle-question"></i> Ingresa el stock
+                        </span>
+                    </section>
+
+                    <div class="admin-editor-actions">
+                        <a href="/mode" class="btn btn-light rounded-pill px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar producto
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
+    </main>
 
-        <style>
-            .rounded-pill-left {
-                border-top-left-radius: 50rem;
-                border-bottom-left-radius: 50rem;
+    <script>
+        const imageInput = document.getElementById('inputItemImg');
+        const imagePreview = document.getElementById('productImagePreview');
+        const imagePlaceholder = document.getElementById('productImagePlaceholder');
+        const imageShell = document.getElementById('productImageShell');
+        let previewUrl;
+
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            const label = this.nextElementSibling;
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+            if (file && file.size > 10 * 1024 * 1024) {
+                alert('La imagen es demasiado pesada. El límite máximo permitido es de 10 MB.');
+                this.value = '';
+                if (label) label.textContent = 'Seleccionar una foto';
+                imagePreview.hidden = true;
+                imagePlaceholder.hidden = false;
+                imageShell.classList.add('admin-editor-image-shell--empty');
+                return;
             }
 
-            .rounded-pill-right {
-                border-top-right-radius: 50rem;
-                border-bottom-right-radius: 50rem;
+            if (file) {
+                previewUrl = URL.createObjectURL(file);
+                imagePreview.src = previewUrl;
+                imagePreview.hidden = false;
+                imagePlaceholder.hidden = true;
+                imageShell.classList.remove('admin-editor-image-shell--empty');
+                if (label) label.textContent = file.name;
+            }
+        });
+
+        const productCode = document.getElementById('productCode');
+        productCode.addEventListener('input', function () {
+            productCode.value = productCode.value.replace(/\s+/g, '').toUpperCase();
+        });
+
+        const description = document.getElementById('productDescription');
+        const descriptionCount = document.getElementById('descriptionCount');
+        function updateDescriptionCount() {
+            descriptionCount.textContent = description.value.length;
+        }
+        description.addEventListener('input', updateDescriptionCount);
+        updateDescriptionCount();
+
+        const stockInput = document.getElementById('productStock');
+        const statusPreview = document.getElementById('newProductStatus');
+        function updateInitialStatus() {
+            if (stockInput.value === '') {
+                statusPreview.className = 'admin-editor-status-badge';
+                statusPreview.innerHTML = '<i class="fa-solid fa-circle-question"></i> Ingresa el stock';
+                return;
             }
 
-            .custom-file-label::after {
-                border-top-right-radius: 50rem;
-                border-bottom-right-radius: 50rem;
-            }
-        </style>
-        <script>
-            // Validación de tamaño de archivo (10MB)
-            document.getElementById('inputItemImg').addEventListener('change', function () {
-                const file = this.files[0];
-                if (file && file.size > 10 * 1024 * 1024) {
-                    alert('La imagen es demasiado pesada. El límite máximo permitido es de 10MB.');
-                    this.value = ''; // Limpiar el input
-                    const label = this.nextElementSibling;
-                    if (label) label.innerText = 'Seleccionar archivo...';
-                } else if (file) {
-                    // Actualizar label con el nombre del archivo
-                    const label = this.nextElementSibling;
-                    if (label) label.innerText = file.name;
-                }
-            });
-        </script>
+            const isActive = Number(stockInput.value) > 0;
+            statusPreview.className = `admin-editor-status-badge ${isActive ? 'is-active' : 'is-inactive'}`;
+            statusPreview.innerHTML = isActive
+                ? '<i class="fa-solid fa-circle-check"></i> Vigente'
+                : '<i class="fa-solid fa-eye-slash"></i> No vigente';
+        }
+        stockInput.addEventListener('input', updateInitialStatus);
+        updateInitialStatus();
+    </script>
 </body>
 
 </html>

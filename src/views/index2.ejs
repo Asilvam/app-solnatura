@@ -192,6 +192,7 @@
                 <% images.forEach(function (image) { %>
                     <% const hasOffer = Number(image.precioAnterior) > Number(image.precio) && Number(image.precio) > 0; %>
                     <% const discountPercentage = hasOffer ? Math.round((1 - Number(image.precio) / Number(image.precioAnterior)) * 100) : 0; %>
+                    <% const productCategory = categorias.find((categoria) => categoria.codigo === image.categoria); %>
                     <div class="card product-card animate__animated animate__fadeInUp" data-toggle="modal"
                         data-target="#productModal" data-title="<%= image.title %>"
                         data-description="<%= image.description %>" data-precio="<%= image.precio %>"
@@ -207,6 +208,11 @@
                             <% } %>
                             <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>"
                                 onload="this.parentElement.classList.remove('skeleton-loading');" loading="lazy" />
+                        </div>
+
+                        <div class="public-product-category"
+                            title="<%= productCategory ? productCategory.nombre : image.categoria %>">
+                            <%= productCategory ? productCategory.nombre : image.categoria %>
                         </div>
 
                         <div class="card-body d-flex flex-column">
