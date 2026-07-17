@@ -481,6 +481,11 @@
             let isSendingWhatsAppOrder = false;
 
             function addToCart(title, codigo, ciclo, precio) {
+                if (isSendingWhatsAppOrder) {
+                    isSendingWhatsAppOrder = false;
+                    document.getElementById('btnSendOrder').removeAttribute('aria-busy');
+                }
+
                 // Check if product already exists
                 const existingItemIndex = cart.findIndex(item => item.codigo === codigo && item.ciclo === ciclo);
                 const quantityUpdated = existingItemIndex > -1;
@@ -557,7 +562,7 @@
                     btnSend.disabled = true;
                 } else {
                     emptyMsg.style.display = 'none';
-                    btnSend.disabled = false;
+                    btnSend.disabled = isSendingWhatsAppOrder;
 
                     let total = 0;
 
@@ -651,7 +656,6 @@
                 const successAlert = document.getElementById('whatsappOrderSuccessAlert');
                 successAlert.classList.add('is-visible');
                 successAlert.setAttribute('aria-hidden', 'false');
-                document.getElementById('whatsappOrderSuccessDismiss').focus();
             }
 
             function hideWhatsAppOrderSuccess() {
@@ -667,11 +671,12 @@
                 const sendButton = document.getElementById('btnSendOrder');
                 sendButton.disabled = true;
                 sendButton.setAttribute('aria-busy', 'true');
+                const orderedItems = cart.map((item) => ({ ...item }));
 
                 let message = '🌿 *¡Hola Solnatura!* Me gustaría realizar el siguiente pedido por favor:\n\n';
                 let total = 0;
 
-                cart.forEach((item, index) => {
+                orderedItems.forEach((item, index) => {
                     const cantidad = item.cantidad || 1;
                     const subtotal = parseFloat(item.precio) * cantidad;
                     total += subtotal;
@@ -688,25 +693,14 @@
                 message += 'Quedo atento/a para coordinar. ¡Gracias!';
 
                 const whatsappUrl = 'https://api.whatsapp.com/send?phone=56992513285&text=' + encodeURIComponent(message);
-                const whatsappWindow = window.open(whatsappUrl, '_blank');
-
-                if (!whatsappWindow) {
-                    isSendingWhatsAppOrder = false;
-                    sendButton.removeAttribute('aria-busy');
-                    renderCart();
-                    showCartToast('No pudimos abrir WhatsApp', 'Permite las ventanas emergentes e inténtalo nuevamente.');
-                    return;
-                }
-
-                whatsappWindow.opener = null;
                 cart = [];
                 saveCart();
                 renderCart();
-                sendButton.removeAttribute('aria-busy');
-                isSendingWhatsAppOrder = false;
-
                 $('#cartModal').modal('hide');
                 showWhatsAppOrderSuccess();
+
+                const whatsappWindow = window.open(whatsappUrl, '_blank');
+                if (whatsappWindow) whatsappWindow.opener = null;
             }
 
             // --- Lógica del Modal Info Producto (Actualizada) ---
