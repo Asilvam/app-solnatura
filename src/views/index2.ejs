@@ -389,11 +389,11 @@
             </span>
         </div>
 
-        <div class="modal fade" id="whatsappOrderSuccessModal" tabindex="-1" role="dialog"
-            aria-labelledby="whatsappOrderSuccessTitle" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
-                <div class="modal-content whatsapp-success-modal">
-                    <div class="modal-body text-center">
+        <div class="whatsapp-success-alert" id="whatsappOrderSuccessAlert" role="dialog"
+            aria-modal="true" aria-labelledby="whatsappOrderSuccessTitle" aria-hidden="true">
+            <div class="whatsapp-success-dialog">
+                <div class="whatsapp-success-modal">
+                    <div class="text-center">
                         <span class="whatsapp-success-icon" aria-hidden="true">
                             <i class="fa-solid fa-check"></i>
                         </span>
@@ -401,10 +401,10 @@
                         <h3 id="whatsappOrderSuccessTitle">¡Pedido enviado a WhatsApp!</h3>
                         <p>
                             Abrimos WhatsApp con el mensaje listo. Revísalo y presiona
-                            <strong>Enviar</strong> para confirmar tu pedido.
+                            <strong>Enviar</strong> para confirmar tu pedido. El carrito ya quedó vacío.
                         </p>
-                        <button type="button" class="btn btn-whatsapp btn-block rounded-pill"
-                            data-dismiss="modal">
+                        <button id="whatsappOrderSuccessDismiss" type="button"
+                            class="btn btn-whatsapp btn-block rounded-pill">
                             <i class="fa-solid fa-check mr-2"></i>Entendido
                         </button>
                     </div>
@@ -413,7 +413,7 @@
         </div>
 
         <!-- Cart Modal -->
-        <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+        <div class="modal" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content cart-modal-content">
                     <div class="modal-header bg-light cart-modal-header">
@@ -478,6 +478,7 @@
 
             let cart = loadCart();
             let cartToastTimer;
+            let isSendingWhatsAppOrder = false;
 
             function addToCart(title, codigo, ciclo, precio) {
                 // Check if product already exists
@@ -646,8 +647,26 @@
                 badge.classList.add('animate__animated', 'animate__bounceIn');
             }
 
+            function showWhatsAppOrderSuccess() {
+                const successAlert = document.getElementById('whatsappOrderSuccessAlert');
+                successAlert.classList.add('is-visible');
+                successAlert.setAttribute('aria-hidden', 'false');
+                document.getElementById('whatsappOrderSuccessDismiss').focus();
+            }
+
+            function hideWhatsAppOrderSuccess() {
+                const successAlert = document.getElementById('whatsappOrderSuccessAlert');
+                successAlert.classList.remove('is-visible');
+                successAlert.setAttribute('aria-hidden', 'true');
+            }
+
             function sendWhatsAppOrder() {
-                if (cart.length === 0) return;
+                if (isSendingWhatsAppOrder || cart.length === 0) return;
+
+                isSendingWhatsAppOrder = true;
+                const sendButton = document.getElementById('btnSendOrder');
+                sendButton.disabled = true;
+                sendButton.setAttribute('aria-busy', 'true');
 
                 let message = '🌿 *¡Hola Solnatura!* Me gustaría realizar el siguiente pedido por favor:\n\n';
                 let total = 0;
@@ -672,23 +691,30 @@
                 const whatsappWindow = window.open(whatsappUrl, '_blank');
 
                 if (!whatsappWindow) {
+                    isSendingWhatsAppOrder = false;
+                    sendButton.removeAttribute('aria-busy');
+                    renderCart();
                     showCartToast('No pudimos abrir WhatsApp', 'Permite las ventanas emergentes e inténtalo nuevamente.');
                     return;
                 }
 
                 whatsappWindow.opener = null;
-                const cartModal = $('#cartModal');
-                cartModal.off('hidden.bs.modal.whatsappSuccess');
-                cartModal.one('hidden.bs.modal.whatsappSuccess', function () {
-                    $('#whatsappOrderSuccessModal').modal('show');
-                });
-                cartModal.modal('hide');
+                cart = [];
+                saveCart();
+                renderCart();
+                sendButton.removeAttribute('aria-busy');
+                isSendingWhatsAppOrder = false;
+
+                $('#cartModal').modal('hide');
+                showWhatsAppOrderSuccess();
             }
 
             // --- Lógica del Modal Info Producto (Actualizada) ---
             $(document).ready(function () {
                 // Initialize cart on load
                 renderCart();
+                document.getElementById('whatsappOrderSuccessDismiss')
+                    .addEventListener('click', hideWhatsAppOrderSuccess);
 
                 document.querySelectorAll('[data-cart-add]').forEach((button) => {
                     button.addEventListener('click', function (event) {

@@ -2136,8 +2136,41 @@ h6 {
     white-space: nowrap;
 }
 
+.whatsapp-success-alert {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(41, 34, 49, 0.62);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.whatsapp-success-alert.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+}
+
+.whatsapp-success-dialog {
+    width: min(366px, 100%);
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.2s ease;
+}
+
+.whatsapp-success-alert.is-visible .whatsapp-success-dialog {
+    transform: translateY(0) scale(1);
+}
+
 .whatsapp-success-modal {
+    width: 100%;
     overflow: hidden;
+    padding: 2rem 1.65rem 1.65rem;
     border: 1px solid #bbf7d0;
     border-top: 4px solid var(--whatsapp);
     border-radius: 1.15rem;
@@ -2145,10 +2178,6 @@ h6 {
         radial-gradient(circle at top right, rgba(134, 239, 172, 0.24), transparent 42%),
         #fff;
     box-shadow: 0 22px 65px rgba(22, 101, 52, 0.24);
-}
-
-.whatsapp-success-modal .modal-body {
-    padding: 2rem 1.65rem 1.65rem;
 }
 
 .whatsapp-success-icon {
@@ -3311,5 +3340,10 @@ a.public-page-link:focus-visible {
 
     .whatsapp-success-icon {
         animation: none;
+    }
+
+    .whatsapp-success-alert,
+    .whatsapp-success-dialog {
+        transition: none;
     }
 }
