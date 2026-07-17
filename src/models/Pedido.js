@@ -2,6 +2,7 @@ const { Schema, model } = require("mongoose");
 
 const itemPedidoSchema = new Schema(
     {
+        productId: { type: Schema.Types.ObjectId, ref: "Image", required: true },
         title: { type: String, required: true },
         codigo: { type: String, required: true },
         ciclo: { type: String, default: "" },
@@ -23,6 +24,7 @@ const pedidoSchema = new Schema(
             enum: ["pendiente", "confirmado", "cancelado"],
             default: "pendiente",
         },
+        stockAplicado: { type: Boolean, default: false },
     },
     {
         timestamps: true,

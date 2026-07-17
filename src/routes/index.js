@@ -1,5 +1,6 @@
 const { Router } = require("express");
 const { unlink } = require("fs-extra");
+const { Types } = require("mongoose");
 const router = Router();
 
 const cloudinary = require("cloudinary");
@@ -98,10 +99,20 @@ router.post("/update/:id", async (req, res, next) => {
     try {
         const { id } = req.params;
         const updateData = { ...req.body };
+        const existingImage = await Image.findById(id).select("estado");
+
+        if (!existingImage) {
+            const err = new Error("Producto no encontrado.");
+            err.userMessage = err.message;
+            return next(err);
+        }
 
         if (updateData.estado == null) {
             updateData.estado = false;
         }
+
+        const nextEstado = updateData.estado === true || updateData.estado === "true" || updateData.estado === "on";
+        console.info(`[PRODUCTO-ESTADO] Cambio solicitado producto=${id} estadoActual=${existingImage.estado} estadoNuevo=${nextEstado}`);
 
         updateData.precioAnterior = updateData.precioAnterior || 0;
 
@@ -127,8 +138,10 @@ router.post("/update/:id", async (req, res, next) => {
         }
 
         await Image.updateOne({ _id: id }, updateData);
+        console.info(`[PRODUCTO-ESTADO] Estado actualizado producto=${id} estado=${nextEstado}`);
         res.redirect("/mode");
     } catch (err) {
+        console.error(`[PRODUCTO-ESTADO] Error al actualizar producto=${req.params.id}: ${err.message}`);
         err.userMessage = "Error al actualizar la imagen. Verifica los datos e intenta nuevamente.";
         next(err);
     }
@@ -216,7 +229,7 @@ router.get("/image/:id/delete", async (req, res, next) => {
         const { id } = req.params;
         const imageDeleted = await Image.findByIdAndDelete(id);
         const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id, { invalidate: true });
-        if (result.result !== 'ok') {
+        if (result.result !== "ok") {
             console.error("Failed to delete image from Cloudinary");
         }
         res.redirect("/mode");
@@ -312,28 +325,46 @@ router.post("/stock/:id", async (req, res, next) => {
 router.post("/pedido", async (req, res, next) => {
     try {
         const { items, total, nombre, telefono, notas } = req.body;
+        console.info("[PEDIDO] Intento de creacion de pedido");
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: "El carrito está vacío." });
         }
 
+        const normalizedItems = [];
         for (const item of items) {
-            if (!item.title || !item.codigo || !item.precio || !item.cantidad) {
-                return res.status(400).json({ error: "Datos de producto incompletos." });
+            const productId = item && item.productId ? String(item.productId) : "";
+            const precio = parseFloat(item && item.precio);
+            const cantidad = parseInt(item && item.cantidad, 10);
+
+            if (!productId || !Types.ObjectId.isValid(productId) || !item.title || !item.codigo || !isFinite(precio) || precio < 0 || !Number.isInteger(cantidad) || cantidad <= 0) {
+                return res.status(400).json({ error: "Datos de producto incompletos o inválidos." });
             }
+
+            normalizedItems.push({
+                productId,
+                title: item.title,
+                codigo: item.codigo,
+                ciclo: item.ciclo || "",
+                precio,
+                cantidad,
+            });
         }
 
         const pedido = new Pedido({
-            items,
+            items: normalizedItems,
             total: isFinite(parseFloat(total)) && parseFloat(total) >= 0 ? parseFloat(total) : 0,
             nombre: nombre || "",
             telefono: telefono || "",
             notas: notas || "",
+            stockAplicado: false,
         });
 
         await pedido.save();
+        console.info(`[PEDIDO] Pedido creado id=${pedido._id} items=${normalizedItems.length} estado=${pedido.estado}`);
         res.json({ ok: true, id: pedido._id });
     } catch (err) {
+        console.error(`[PEDIDO] Error al crear pedido: ${err.message}`);
         err.userMessage = "No se pudo guardar el pedido.";
         next(err);
     }
@@ -356,15 +387,106 @@ router.post("/mode/pedidos/:id/estado", async (req, res, next) => {
     try {
         const { id } = req.params;
         const { estado } = req.body;
+        console.info(`[PEDIDO-ESTADO] Cambio solicitado pedido=${id} nuevoEstado=${estado}`);
         const allowed = ["pendiente", "confirmado", "cancelado"];
         if (!allowed.includes(estado)) {
             const err = new Error("Estado inválido.");
             err.userMessage = err.message;
             return next(err);
         }
-        await Pedido.updateOne({ _id: id }, { estado });
+        const pedido = await Pedido.findById(id);
+        if (!pedido) {
+            const err = new Error("Pedido no encontrado.");
+            err.userMessage = err.message;
+            return next(err);
+        }
+        console.info(`[PEDIDO-ESTADO] Estado actual pedido=${id} estado=${pedido.estado} stockAplicado=${pedido.stockAplicado}`);
+
+        if (pedido.estado === estado) {
+            console.info(`[PEDIDO-ESTADO] Sin cambios pedido=${id} estado=${estado}`);
+            return res.redirect("/mode/pedidos");
+        }
+
+        const wasConfirmed = pedido.estado === "confirmado";
+        const willBeConfirmed = estado === "confirmado";
+        const willBeCancelled = estado === "cancelado";
+
+        if (!(willBeConfirmed || willBeCancelled)) {
+            console.info(`[PEDIDO-ESTADO] Transicion sin movimiento de stock pedido=${id} from=${pedido.estado} to=${estado}`);
+        }
+
+        if (willBeConfirmed && !pedido.stockAplicado) {
+            console.info(`[PEDIDO-ESTADO] Aplicando descuento de stock pedido=${id}`);
+            const discountedItems = [];
+
+            for (const item of pedido.items) {
+                const productId = item && item.productId ? String(item.productId) : "";
+                const cantidad = parseInt(item && item.cantidad, 10);
+
+                if (!productId || !Types.ObjectId.isValid(productId) || !Number.isInteger(cantidad) || cantidad <= 0) {
+                    const err = new Error("El pedido contiene productos inválidos para descontar stock.");
+                    err.userMessage = err.message;
+                    return next(err);
+                }
+
+                const discounted = await Image.updateOne(
+                    { _id: productId, cantidad: { $gte: cantidad } },
+                    { $inc: { cantidad: -cantidad } }
+                );
+
+                if (discounted.modifiedCount === 0) {
+                    for (const reverted of discountedItems) {
+                        await Image.updateOne({ _id: reverted.productId }, { $inc: { cantidad: reverted.cantidad } });
+                    }
+                    const err = new Error(`Stock insuficiente para ${item.title || "un producto"}.`);
+                    err.userMessage = err.message;
+                    return next(err);
+                }
+
+                discountedItems.push({ productId, cantidad });
+            }
+
+            pedido.stockAplicado = true;
+            console.info(`[PEDIDO-ESTADO] Descuento de stock aplicado pedido=${id}`);
+        }
+
+        if (willBeCancelled && wasConfirmed && pedido.stockAplicado) {
+            console.info(`[PEDIDO-ESTADO] Aplicando reposicion de stock pedido=${id}`);
+            const restockedItems = [];
+
+            for (const item of pedido.items) {
+                const productId = item && item.productId ? String(item.productId) : "";
+                const cantidad = parseInt(item && item.cantidad, 10);
+
+                if (!productId || !Types.ObjectId.isValid(productId) || !Number.isInteger(cantidad) || cantidad <= 0) {
+                    const err = new Error("El pedido contiene productos inválidos para reponer stock.");
+                    err.userMessage = err.message;
+                    return next(err);
+                }
+
+                const restocked = await Image.updateOne({ _id: productId }, { $inc: { cantidad: cantidad } });
+                if (restocked.modifiedCount === 0) {
+                    for (const reverted of restockedItems) {
+                        await Image.updateOne({ _id: reverted.productId }, { $inc: { cantidad: -reverted.cantidad } });
+                    }
+                    const err = new Error(`No se pudo reponer stock para ${item.title || "un producto"}.`);
+                    err.userMessage = err.message;
+                    return next(err);
+                }
+
+                restockedItems.push({ productId, cantidad });
+            }
+
+            pedido.stockAplicado = false;
+            console.info(`[PEDIDO-ESTADO] Reposicion de stock aplicada pedido=${id}`);
+        }
+
+        pedido.estado = estado;
+        await pedido.save();
+        console.info(`[PEDIDO-ESTADO] Estado actualizado pedido=${id} estado=${estado} stockAplicado=${pedido.stockAplicado}`);
         res.redirect("/mode/pedidos");
     } catch (err) {
+        console.error(`[PEDIDO-ESTADO] Error al actualizar estado: ${err.message}`);
         err.userMessage = "No se pudo actualizar el estado del pedido.";
         next(err);
     }

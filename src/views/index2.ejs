@@ -40,7 +40,7 @@
                         data-target="#productModal" data-title="<%= image.title %>"
                         data-description="<%= image.description %>" data-precio="<%= image.precio %>"
                         data-precio-anterior="<%= image.precioAnterior || 0 %>" data-stock="<%= image.cantidad %>"
-                        data-codigo="<%= image.codigo %>" data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
+                        data-id="<%= image._id %>" data-codigo="<%= image.codigo %>" data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
                         <div class="card-img-wrapper skeleton-loading">
                             <img src="<%= image.path %>" class="card-img-top" alt="<%= image.title %>"
                                 onload="this.parentElement.classList.remove('skeleton-loading'); this.style.opacity = 1;"
@@ -84,7 +84,7 @@
                             </p>
 
                             <button type="button"
-                                onclick="event.stopPropagation(); addToCart('<%= image.title %>', '<%= image.codigo %>', '<%= image.ciclo %>', '<%= image.precio %>')"
+                                onclick="event.stopPropagation(); addToCart('<%= image._id %>', '<%= image.title %>', '<%= image.codigo %>', '<%= image.ciclo %>', '<%= image.precio %>')"
                                 class="btn btn-whatsapp btn-block mt-auto">
                                 <i class="fa-solid fa-cart-plus"></i>
                                 Añadir al carrito
@@ -252,17 +252,19 @@
         <script>
             // --- Lógica del Carrito ---
             let cart = JSON.parse(localStorage.getItem('solnatura_cart')) || [];
+            // Ensure stock-sensitive orders only keep items linked to a concrete product id.
+            cart = cart.filter(item => item && item.productId);
 
-            function addToCart(title, codigo, ciclo, precio) {
+            function addToCart(productId, title, codigo, ciclo, precio) {
                 // Check if product already exists
-                const existingItemIndex = cart.findIndex(item => item.codigo === codigo && item.ciclo === ciclo);
+                const existingItemIndex = cart.findIndex(item => item.productId === productId);
 
                 if (existingItemIndex > -1) {
                     // Increase quantity if it exists
                     cart[existingItemIndex].cantidad = (cart[existingItemIndex].cantidad || 1) + 1;
                 } else {
                     // Add new item with quantity 1
-                    cart.push({ title, codigo, ciclo, precio, cantidad: 1 });
+                    cart.push({ productId, title, codigo, ciclo, precio, cantidad: 1 });
                 }
 
                 saveCart();
@@ -444,6 +446,7 @@
                     var precio = button.data('precio');
                     var precioAnterior = button.data('precio-anterior');
                     var stock = button.data('stock');
+                    var productId = button.data('id');
                     var codigo = button.data('codigo');
                     var ciclo = button.data('ciclo');
                     var imagePath = button.data('path');
@@ -474,7 +477,7 @@
                     addBtn.parentNode.replaceChild(newBtn, addBtn);
 
                     newBtn.addEventListener('click', function () {
-                        addToCart(title, codigo, ciclo, precio);
+                        addToCart(productId, title, codigo, ciclo, precio);
                         $('#productModal').modal('hide'); // Opcional: cerrar modal tras añadir
                     });
                 });
