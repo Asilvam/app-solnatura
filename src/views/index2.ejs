@@ -389,6 +389,29 @@
             </span>
         </div>
 
+        <div class="modal fade" id="whatsappOrderSuccessModal" tabindex="-1" role="dialog"
+            aria-labelledby="whatsappOrderSuccessTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+                <div class="modal-content whatsapp-success-modal">
+                    <div class="modal-body text-center">
+                        <span class="whatsapp-success-icon" aria-hidden="true">
+                            <i class="fa-solid fa-check"></i>
+                        </span>
+                        <span class="whatsapp-success-eyebrow">Solicitud preparada</span>
+                        <h3 id="whatsappOrderSuccessTitle">¡Pedido enviado a WhatsApp!</h3>
+                        <p>
+                            Abrimos WhatsApp con el mensaje listo. Revísalo y presiona
+                            <strong>Enviar</strong> para confirmar tu pedido.
+                        </p>
+                        <button type="button" class="btn btn-whatsapp btn-block rounded-pill"
+                            data-dismiss="modal">
+                            <i class="fa-solid fa-check mr-2"></i>Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Cart Modal -->
         <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -654,8 +677,12 @@
                 }
 
                 whatsappWindow.opener = null;
-                $('#cartModal').modal('hide');
-                showCartToast('WhatsApp abierto', 'Tu carrito seguirá guardado hasta que decidas vaciarlo.');
+                const cartModal = $('#cartModal');
+                cartModal.off('hidden.bs.modal.whatsappSuccess');
+                cartModal.one('hidden.bs.modal.whatsappSuccess', function () {
+                    $('#whatsappOrderSuccessModal').modal('show');
+                });
+                cartModal.modal('hide');
             }
 
             // --- Lógica del Modal Info Producto (Actualizada) ---
