@@ -24,10 +24,14 @@ cloudinary.config({
 const Image = require("../models/Image");
 const Categoria = require("../models/Categoria");
 const AuditLog = require("../models/AuditLog");
+const Pedido = require("../models/Pedido");
 
 const PUBLIC_PAGE_SIZE = 24;
 const MODE_PAGE_SIZE = 12;
 const LOW_STOCK_LIMIT = 5;
+const ORDER_LIST_LIMIT = 100;
+const ORDER_ITEM_LIMIT = 50;
+const ORDER_STATES = ["pendiente", "confirmado", "cancelado"];
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -42,6 +46,42 @@ const requestWantsJson = (req) => (
 const redirectWithNotice = (res, destination, notice) => {
     const separator = destination.includes("?") ? "&" : "?";
     res.redirect(`${destination}${separator}notice=${encodeURIComponent(notice)}`);
+};
+
+const normalizeOrderRequestId = (value) => {
+    const requestId = typeof value === "string" ? value.trim() : "";
+    return /^[a-zA-Z0-9_-]{12,100}$/.test(requestId) ? requestId : "";
+};
+
+const normalizeOrderItems = (items) => {
+    if (!Array.isArray(items) || items.length === 0 || items.length > ORDER_ITEM_LIMIT) {
+        return null;
+    }
+
+    const normalized = [];
+
+    for (const item of items) {
+        const productId = typeof item?.productId === "string" && isValidObjectId(item.productId)
+            ? item.productId
+            : "";
+        const codigo = normalizeCode(item?.codigo);
+        const cantidad = Number.parseInt(item?.cantidad, 10);
+
+        if ((!productId && !codigo) || !Number.isInteger(cantidad) || cantidad < 1 || cantidad > 999) {
+            return null;
+        }
+
+        normalized.push({ productId, codigo, cantidad });
+    }
+
+    return normalized;
+};
+
+const createOrderActionError = (message, status = 400) => {
+    const error = new Error(message);
+    error.status = status;
+    error.userMessage = message;
+    return error;
 };
 
 const cleanupTempFile = async (file) => {
@@ -397,6 +437,98 @@ router.get("/", async (req, res, next) => {
     }
 });
 
+router.post("/pedido", async (req, res, next) => {
+    try {
+        const requestId = normalizeOrderRequestId(req.body?.requestId);
+        const requestedItems = normalizeOrderItems(req.body?.items);
+
+        if (!requestId || !requestedItems) {
+            return res.status(400).json({
+                ok: false,
+                message: "El pedido contiene datos inválidos.",
+            });
+        }
+
+        const productIds = requestedItems
+            .map((item) => item.productId)
+            .filter(Boolean);
+        const productCodes = requestedItems
+            .map((item) => item.codigo)
+            .filter(Boolean);
+        const products = await Image.find({
+            $or: [
+                { _id: { $in: productIds } },
+                { codigo: { $in: productCodes } },
+            ],
+        }).select("_id title codigo ciclo precio").lean();
+        const productsById = new Map(
+            products.map((product) => [String(product._id), product])
+        );
+        const productsByCode = new Map(
+            products.map((product) => [normalizeCode(product.codigo), product])
+        );
+        const orderItemsByProduct = new Map();
+
+        for (const item of requestedItems) {
+            const product = productsById.get(item.productId) || productsByCode.get(item.codigo);
+
+            if (!product) {
+                return res.status(400).json({
+                    ok: false,
+                    message: "Uno de los productos ya no está disponible.",
+                });
+            }
+
+            const key = String(product._id);
+            const existingItem = orderItemsByProduct.get(key);
+
+            if (existingItem) {
+                existingItem.cantidad += item.cantidad;
+            } else {
+                orderItemsByProduct.set(key, {
+                    productId: product._id,
+                    title: product.title,
+                    codigo: product.codigo,
+                    ciclo: product.ciclo || "",
+                    precio: Number(product.precio) || 0,
+                    cantidad: item.cantidad,
+                });
+            }
+        }
+
+        const orderItems = Array.from(orderItemsByProduct.values());
+        const total = orderItems.reduce(
+            (sum, item) => sum + (item.precio * item.cantidad),
+            0
+        );
+        const pedido = await Pedido.findOneAndUpdate(
+            { requestId },
+            {
+                $setOnInsert: {
+                    items: orderItems,
+                    total,
+                    canal: "whatsapp",
+                    estado: "pendiente",
+                },
+            },
+            {
+                upsert: true,
+                new: true,
+                runValidators: true,
+                setDefaultsOnInsert: true,
+            }
+        ).select("_id requestId");
+
+        res.status(201).json({
+            ok: true,
+            id: pedido._id,
+        });
+    } catch (err) {
+        err.userMessage = "No se pudo registrar el pedido.";
+        next(err);
+    }
+});
+
 router.get("/cat/:id", async (req, res, next) => {
     try {
         const filters = normalizePublicFilters({
@@ -606,6 +738,228 @@ router.get("/mode/auditoria", requireAdmin, async (req, res, next) => {
     }
 });
 
+router.get("/mode/pedidos", requireAdmin, async (req, res, next) => {
+    try {
+        const [pedidos, total] = await Promise.all([
+            Pedido.find()
+                .sort({ createdAt: -1 })
+                .limit(ORDER_LIST_LIMIT)
+                .lean(),
+            Pedido.countDocuments(),
+        ]);
+
+        res.render("pedidos", {
+            pedidos,
+            total,
+            listLimit: ORDER_LIST_LIMIT,
+            notice: typeof req.query.notice === "string" ? req.query.notice.slice(0, 180) : "",
+        });
+    } catch (err) {
+        err.userMessage = "No se pudieron cargar los pedidos.";
+        next(err);
+    }
+});
+
+router.post("/mode/pedidos/:id/estado", requireAdmin, requireCsrf, async (req, res, next) => {
+    const estado = typeof req.body.estado === "string" ? req.body.estado : "";
+    const procesarStock = req.body.procesarStock === "true"
+        || req.body.procesarStock === "on";
+    let session;
+
+    try {
+        if (!isValidObjectId(req.params.id) || !ORDER_STATES.includes(estado)) {
+            return redirectWithNotice(res, "/mode/pedidos", "La actualización del pedido no es válida.");
+        }
+
+        if (procesarStock && estado !== "confirmado") {
+            return redirectWithNotice(
+                res,
+                "/mode/pedidos",
+                "El stock sólo puede procesarse al confirmar un pedido."
+            );
+        }
+
+        session = await startSession();
+        let previousState;
+        let pedido;
+        let processedStock = false;
+        let processedItems = [];
+        let stateChanged = false;
+
+        await session.withTransaction(async () => {
+            processedStock = false;
+            processedItems = [];
+            stateChanged = false;
+            pedido = await Pedido.findById(req.params.id).session(session);
+
+            if (!pedido) {
+                throw createOrderActionError("El pedido ya no existe.", 404);
+            }
+
+            previousState = pedido.estado;
+
+            if (previousState === "cancelado") {
+                throw createOrderActionError(
+                    "Un pedido cancelado es definitivo y no puede volver a cambiar de estado.",
+                    409
+                );
+            }
+
+            if (procesarStock) {
+                if (pedido.stockProcesado) {
+                    throw createOrderActionError(
+                        "El stock de este pedido ya fue procesado anteriormente.",
+                        409
+                    );
+                }
+
+                const quantitiesByProduct = new Map();
+                for (const item of pedido.items) {
+                    const productId = String(item.productId || "");
+                    const quantity = Number(item.cantidad);
+
+                    if (!isValidObjectId(productId) || !Number.isInteger(quantity) || quantity < 1) {
+                        throw createOrderActionError(
+                            "El pedido contiene un producto inválido para procesar stock.",
+                            409
+                        );
+                    }
+
+                    quantitiesByProduct.set(
+                        productId,
+                        (quantitiesByProduct.get(productId) || 0) + quantity
+                    );
+                }
+
+                const requestedStock = Array.from(
+                    quantitiesByProduct,
+                    ([productId, quantity]) => ({ productId, quantity })
+                );
+                const products = await Image.find({
+                    _id: { $in: requestedStock.map((item) => item.productId) },
+                })
+                    .select("_id title cantidad")
+                    .session(session)
+                    .lean();
+                const productsById = new Map(
+                    products.map((product) => [String(product._id), product])
+                );
+
+                for (const item of requestedStock) {
+                    const product = productsById.get(item.productId);
+                    if (!product) {
+                        throw createOrderActionError(
+                            "Uno de los productos del pedido ya no existe.",
+                            409
+                        );
+                    }
+                    if (Number(product.cantidad) < item.quantity) {
+                        throw createOrderActionError(
+                            `Stock insuficiente para ${product.title}. Disponible: ${product.cantidad}.`,
+                            409
+                        );
+                    }
+                }
+
+                for (const item of requestedStock) {
+                    const updatedProduct = await Image.findOneAndUpdate(
+                        {
+                            _id: item.productId,
+                            cantidad: { $gte: item.quantity },
+                        },
+                        [
+                            {
+                                $set: {
+                                    cantidad: { $subtract: ["$cantidad", item.quantity] },
+                                },
+                            },
+                            {
+                                $set: {
+                                    estado: {
+                                        $cond: [
+                                            { $lte: ["$cantidad", 0] },
+                                            false,
+                                            "$estado",
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                        {
+                            new: true,
+                            session,
+                        }
+                    ).select("_id title cantidad estado");
+
+                    if (!updatedProduct) {
+                        throw createOrderActionError(
+                            "El stock cambió mientras se procesaba el pedido. Intenta nuevamente.",
+                            409
+                        );
+                    }
+
+                    processedItems.push({
+                        productId: String(updatedProduct._id),
+                        quantity: item.quantity,
+                        remainingStock: updatedProduct.cantidad,
+                        estado: updatedProduct.estado,
+                    });
+                }
+
+                pedido.stockProcesado = true;
+                pedido.stockProcesadoAt = new Date();
+                pedido.stockProcesadoPor = req.admin.username;
+                processedStock = true;
+            }
+
+            if (pedido.estado !== estado) {
+                pedido.estado = estado;
+                pedido.estadoActualizadoAt = new Date();
+                pedido.estadoActualizadoPor = req.admin.username;
+                stateChanged = true;
+            }
+
+            if (stateChanged || processedStock) {
+                await pedido.save({ session });
+            }
+        });
+
+        if (!stateChanged && !processedStock) {
+            return res.redirect("/mode/pedidos");
+        }
+
+        await recordAudit(req, {
+            action: processedStock ? "order.stock-process" : "order.status-update",
+            entityType: "Pedido",
+            entityId: pedido._id,
+            summary: processedStock
+                ? `Pedido confirmado y stock procesado: #${String(pedido._id).slice(-6).toUpperCase()}`
+                : `Estado de pedido actualizado: ${previousState} → ${pedido.estado}`,
+            metadata: {
+                previousState,
+                currentState: pedido.estado,
+                stateChanged,
+                processedStock,
+                processedItems,
+            },
+        });
+
+        const notice = processedStock
+            ? "Pedido confirmado y stock descontado correctamente."
+            : `Pedido actualizado a ${pedido.estado}.`;
+        return redirectWithNotice(res, "/mode/pedidos", notice);
+    } catch (err) {
+        if (err.userMessage && err.status && err.status < 500) {
+            return redirectWithNotice(res, "/mode/pedidos", err.userMessage);
+        }
+
+        err.userMessage = "No se pudo actualizar el pedido.";
+        return next(err);
+    } finally {
+        if (session) await session.endSession();
+    }
+});
+
 router.get("/mode/export.xlsx", requireAdmin, async (req, res, next) => {
     try {
         const filters = normalizeModeFilters(req.query);
@@ -757,14 +1111,30 @@ router.post("/mode/bulk", requireAdmin, requireCsrf, async (req, res, next) => {
         }
 
         let update;
+        let updateFilter = { _id: { $in: productIds } };
         let summary;
         let metadata = { productIds };
+        let skippedWithoutStock = 0;
 
         if (action === "activar" || action === "desactivar") {
             const estado = action === "activar";
             update = { estado };
             summary = `${productIds.length} productos marcados como ${estado ? "vigentes" : "no vigentes"}`;
             metadata = { ...metadata, estado };
+            if (estado) {
+                skippedWithoutStock = await Image.countDocuments({
+                    _id: { $in: productIds },
+                    $or: [
+                        { cantidad: { $lte: 0 } },
+                        { cantidad: null },
+                        { cantidad: { $exists: false } },
+                    ],
+                });
+                updateFilter = {
+                    _id: { $in: productIds },
+                    cantidad: { $gt: 0 },
+                };
+            }
         } else if (action === "categoria") {
             const categoria = normalizeCategoryCode(req.body.bulkCategory);
             const categoryExists = await Categoria.exists({ codigo: categoria, estado: true });
@@ -778,15 +1148,29 @@ router.post("/mode/bulk", requireAdmin, requireCsrf, async (req, res, next) => {
             return redirectWithNotice(res, returnTo, "Selecciona una acción masiva válida.");
         }
 
-        const result = await Image.updateMany({ _id: { $in: productIds } }, update, { runValidators: true });
+        const result = await Image.updateMany(updateFilter, update, { runValidators: true });
+        if (action === "activar" || action === "desactivar") {
+            summary = `${result.modifiedCount} productos marcados como ${update.estado ? "vigentes" : "no vigentes"}`;
+        }
         await recordAudit(req, {
             action: "product.bulk-update",
             entityType: "Image",
             summary,
-            metadata: { ...metadata, modifiedCount: result.modifiedCount },
+            metadata: {
+                ...metadata,
+                modifiedCount: result.modifiedCount,
+                skippedWithoutStock,
+            },
         });
 
-        redirectWithNotice(res, returnTo, `${result.modifiedCount} productos actualizados.`);
+        const skippedNotice = skippedWithoutStock > 0
+            ? ` ${skippedWithoutStock} no se activaron porque no tienen stock.`
+            : "";
+        redirectWithNotice(
+            res,
+            returnTo,
+            `${result.modifiedCount} productos actualizados.${skippedNotice}`
+        );
     } catch (err) {
         err.userMessage = "No se pudo completar la acción masiva.";
         next(err);
@@ -809,15 +1193,25 @@ router.post("/mode/:id/stock", requireAdmin, requireCsrf, async (req, res, next)
         const stockFilter = delta < 0
             ? { _id: req.params.id, cantidad: { $gt: 0 } }
             : { _id: req.params.id };
+        const currentStockExpression = { $ifNull: ["$cantidad", 0] };
+        const nextStockExpression = { $add: [currentStockExpression, delta] };
         const product = await Image.findOneAndUpdate(stockFilter, [
             {
                 $set: {
-                    cantidad: { $add: [{ $ifNull: ["$cantidad", 0] }, delta] },
-                },
-            },
-            {
-                $set: {
-                    estado: { $gt: ["$cantidad", 0] },
+                    cantidad: nextStockExpression,
+                    estado: {
+                        $cond: [
+                            { $lte: [nextStockExpression, 0] },
+                            false,
+                            {
+                                $cond: [
+                                    { $lte: [currentStockExpression, 0] },
+                                    true,
+                                    "$estado",
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         ], { new: true });

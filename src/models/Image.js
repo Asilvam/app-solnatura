@@ -19,4 +19,11 @@ const imageSchema = new Schema({
     categoria: { type: String, required: true, trim: true, uppercase: true, index: true },
 });
 
+imageSchema.pre("validate", function enforceInactiveWithoutStock(next) {
+    if (Number(this.cantidad) <= 0) {
+        this.estado = false;
+    }
+    next();
+});
+
 module.exports = model("Image", imageSchema);

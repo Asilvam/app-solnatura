@@ -194,7 +194,7 @@
                     <% const discountPercentage = hasOffer ? Math.round((1 - Number(image.precio) / Number(image.precioAnterior)) * 100) : 0; %>
                     <% const productCategory = categorias.find((categoria) => categoria.codigo === image.categoria); %>
                     <div class="card product-card animate__animated animate__fadeInUp" data-toggle="modal"
-                        data-target="#productModal" data-title="<%= image.title %>"
+                        data-target="#productModal" data-product-id="<%= image._id %>" data-title="<%= image.title %>"
                         data-description="<%= image.description %>" data-precio="<%= image.precio %>"
                         data-precio-anterior="<%= image.precioAnterior || 0 %>" data-stock="<%= image.cantidad %>"
                         data-codigo="<%= image.codigo %>" data-ciclo="<%= image.ciclo %>" data-path="<%= image.path %>">
@@ -462,6 +462,7 @@
                         if (!codigo || !Number.isFinite(precio) || precio < 0) return validItems;
 
                         validItems.push({
+                            productId: typeof item.productId === 'string' ? item.productId : '',
                             title: String(item.title || 'Producto'),
                             codigo,
                             ciclo: String(item.ciclo || ''),
@@ -480,22 +481,26 @@
             let cartToastTimer;
             let isSendingWhatsAppOrder = false;
 
-            function addToCart(title, codigo, ciclo, precio) {
+            function addToCart(productId, title, codigo, ciclo, precio) {
                 if (isSendingWhatsAppOrder) {
                     isSendingWhatsAppOrder = false;
                     document.getElementById('btnSendOrder').removeAttribute('aria-busy');
                 }
 
                 // Check if product already exists
-                const existingItemIndex = cart.findIndex(item => item.codigo === codigo && item.ciclo === ciclo);
+                const existingItemIndex = cart.findIndex(item => (
+                    (productId && item.productId === productId)
+                    || ((!productId || !item.productId) && item.codigo === codigo && item.ciclo === ciclo)
+                ));
                 const quantityUpdated = existingItemIndex > -1;
 
                 if (quantityUpdated) {
                     // Increase quantity if it exists
                     cart[existingItemIndex].cantidad = (cart[existingItemIndex].cantidad || 1) + 1;
+                    if (productId) cart[existingItemIndex].productId = productId;
                 } else {
                     // Add new item with quantity 1
-                    cart.push({ title, codigo, ciclo, precio, cantidad: 1 });
+                    cart.push({ productId, title, codigo, ciclo, precio, cantidad: 1 });
                 }
 
                 saveCart();
@@ -664,6 +669,34 @@
                 successAlert.setAttribute('aria-hidden', 'true');
             }
 
+            function createOrderRequestId() {
+                if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                    return window.crypto.randomUUID();
+                }
+
+                return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+            }
+
+            function persistWhatsAppOrder(requestId, items) {
+                const payload = {
+                    requestId,
+                    items: items.map((item) => ({
+                        productId: item.productId || '',
+                        codigo: item.codigo,
+                        cantidad: item.cantidad || 1,
+                    })),
+                };
+
+                void fetch('/pedido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true,
+                }).catch((error) => {
+                    console.warn('No se pudo registrar el pedido:', error);
+                });
+            }
+
             function sendWhatsAppOrder() {
                 if (isSendingWhatsAppOrder || cart.length === 0) return;
 
@@ -672,6 +705,7 @@
                 sendButton.disabled = true;
                 sendButton.setAttribute('aria-busy', 'true');
                 const orderedItems = cart.map((item) => ({ ...item }));
+                const orderRequestId = createOrderRequestId();
 
                 let message = '🌿 *¡Hola Solnatura!* Me gustaría realizar el siguiente pedido por favor:\n\n';
                 let total = 0;
@@ -693,6 +727,7 @@
                 message += 'Quedo atento/a para coordinar. ¡Gracias!';
 
                 const whatsappUrl = 'https://api.whatsapp.com/send?phone=56992513285&text=' + encodeURIComponent(message);
+                persistWhatsAppOrder(orderRequestId, orderedItems);
                 cart = [];
                 saveCart();
                 renderCart();
@@ -717,6 +752,7 @@
                         if (!productCard) return;
 
                         addToCart(
+                            productCard.dataset.productId,
                             productCard.dataset.title,
                             productCard.dataset.codigo,
                             productCard.dataset.ciclo,
@@ -727,6 +763,7 @@
 
                 $('#productModal').on('show.bs.modal', function (event) {
                     var button = $(event.relatedTarget);
+                    var productId = button.data('product-id');
                     var title = button.data('title');
                     var description = button.data('description');
                     var precio = button.data('precio');
@@ -764,7 +801,7 @@
                     addBtn.parentNode.replaceChild(newBtn, addBtn);
 
                     newBtn.addEventListener('click', function () {
-                        addToCart(title, codigo, ciclo, precio);
+                        addToCart(productId, title, codigo, ciclo, precio);
                         $('#productModal').modal('hide'); // Opcional: cerrar modal tras añadir
                     });
                 });

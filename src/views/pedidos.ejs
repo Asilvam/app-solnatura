@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Pedidos — Solnatura</title>
+    <%- include("partials/head") -%>
+</head>
+
+<body>
+    <%- include("partials/navigationM") %>
+    <% const orderStatusLabels = {
+        pendiente: "Pendiente",
+        confirmado: "Confirmado",
+        cancelado: "Cancelado",
+    }; %>
+
+    <main class="container-fluid admin-orders-page px-3 px-md-4 py-4">
+        <header class="admin-orders-header">
+            <div>
+                <span class="admin-orders-eyebrow">Ventas por WhatsApp</span>
+                <h1>Pedidos recibidos</h1>
+                <p>Consulta los productos solicitados desde el carrito de la tienda.</p>
+            </div>
+            <div class="admin-orders-total">
+                <i class="fa-solid fa-receipt"></i>
+                <span>
+                    <strong><%= total %></strong>
+                    <small><%= total === 1 ? "pedido guardado" : "pedidos guardados" %></small>
+                </span>
+            </div>
+        </header>
+
+        <% if (notice) { %>
+            <div class="alert admin-orders-notice admin-orders-notice--flash" role="status"
+                data-order-notice>
+                <span><i class="fa-solid fa-circle-info mr-1"></i> <%= notice %></span>
+                <button type="button" aria-label="Cerrar aviso" data-order-notice-close>
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        <% } %>
+
+        <% if (total > listLimit) { %>
+            <div class="alert admin-orders-notice" role="status">
+                Se muestran los <strong><%= listLimit %> pedidos más recientes</strong>.
+            </div>
+        <% } %>
+
+        <% if (pedidos.length === 0) { %>
+            <section class="admin-orders-empty">
+                <span><i class="fa-solid fa-basket-shopping"></i></span>
+                <h2>Aún no hay pedidos</h2>
+                <p>Cuando un cliente presione “Pedir por WhatsApp”, su pedido aparecerá aquí.</p>
+                <a href="/" class="btn btn-primary px-4" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-store mr-1"></i> Ver tienda
+                </a>
+            </section>
+        <% } else { %>
+            <section class="admin-orders-list" aria-label="Listado de pedidos">
+                <% pedidos.forEach(function (pedido) { %>
+                    <article class="admin-order-card">
+                        <header class="admin-order-card-header">
+                            <div>
+                                <span class="admin-order-date">
+                                    <i class="fa-regular fa-calendar mr-1"></i>
+                                    <%= new Date(pedido.createdAt).toLocaleString("es-CL", {
+                                        dateStyle: "medium",
+                                        timeStyle: "short",
+                                    }) %>
+                                </span>
+                                <h2>Pedido #<%= String(pedido._id).slice(-6).toUpperCase() %></h2>
+                            </div>
+                            <span class="admin-order-status admin-order-status--<%= pedido.estado || 'pendiente' %>">
+                                <i class="fa-solid <%= pedido.estado === 'confirmado'
+                                    ? 'fa-circle-check'
+                                    : pedido.estado === 'cancelado'
+                                        ? 'fa-circle-xmark'
+                                        : 'fa-clock' %>"></i>
+                                <%= orderStatusLabels[pedido.estado] || orderStatusLabels.pendiente %>
+                            </span>
+                        </header>
+
+                        <div class="admin-order-items">
+                            <% pedido.items.forEach(function (item) { %>
+                                <div class="admin-order-item">
+                                    <span class="admin-order-quantity"><%= item.cantidad %>×</span>
+                                    <div class="admin-order-product">
+                                        <strong><%= item.title %></strong>
+                                        <small>
+                                            Código: <%= item.codigo %>
+                                            <% if (item.ciclo) { %> · Ciclo: <%= item.ciclo %><% } %>
+                                        </small>
+                                    </div>
+                                    <span class="admin-order-subtotal">
+                                        $<%= Number(item.precio * item.cantidad).toLocaleString("es-CL") %>
+                                    </span>
+                                </div>
+                            <% }) %>
+                        </div>
+
+                        <footer class="admin-order-card-footer">
+                            <span><%= pedido.items.reduce((sum, item) => sum + item.cantidad, 0) %> unidades</span>
+                            <strong>Total: $<%= Number(pedido.total || 0).toLocaleString("es-CL") %></strong>
+                        </footer>
+
+                        <% if (pedido.estado === "cancelado") { %>
+                            <div class="admin-order-terminal">
+                                <i class="fa-solid fa-lock"></i>
+                                <span>
+                                    <strong>Pedido cancelado definitivamente</strong>
+                                    <small>
+                                        Este pedido ya no puede cambiar de estado.
+                                        <% if (pedido.stockProcesado) { %>
+                                            El stock descontado no fue repuesto automáticamente.
+                                        <% } %>
+                                    </small>
+                                </span>
+                            </div>
+                        <% } else { %>
+                            <form action="/mode/pedidos/<%= pedido._id %>/estado" method="post"
+                                class="admin-order-actions" data-order-status-form
+                                data-stock-processed="<%= pedido.stockProcesado ? 'true' : 'false' %>"
+                                data-original-status="<%= pedido.estado %>"
+                                data-order-number="<%= String(pedido._id).slice(-6).toUpperCase() %>">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                <input type="hidden" name="procesarStock" value="false" data-process-stock-field />
+
+                                <div class="admin-order-status-field">
+                                    <label for="orderStatus-<%= pedido._id %>">Estado del pedido</label>
+                                    <select id="orderStatus-<%= pedido._id %>" name="estado"
+                                        class="form-control" data-order-status-select>
+                                        <option value="pendiente" <%= pedido.estado === "pendiente" ? "selected" : "" %>>
+                                            Pendiente
+                                        </option>
+                                        <option value="confirmado" <%= pedido.estado === "confirmado" ? "selected" : "" %>>
+                                            Confirmado
+                                        </option>
+                                        <option value="cancelado">Cancelado</option>
+                                    </select>
+                                </div>
+
+                                <% if (pedido.stockProcesado) { %>
+                                    <div class="admin-order-stock-processed">
+                                        <i class="fa-solid fa-box-open"></i>
+                                        <span>
+                                            <strong>Stock procesado</strong>
+                                            <small>
+                                                <%= pedido.stockProcesadoAt
+                                                    ? new Date(pedido.stockProcesadoAt).toLocaleString("es-CL", {
+                                                        dateStyle: "short",
+                                                        timeStyle: "short",
+                                                    })
+                                                    : "Fecha no disponible" %>
+                                                <% if (pedido.stockProcesadoPor) { %>
+                                                    · <%= pedido.stockProcesadoPor %>
+                                                <% } %>
+                                            </small>
+                                        </span>
+                                    </div>
+                                <% } else { %>
+                                    <div class="admin-order-stock-pending" data-confirm-stock-note>
+                                        <i class="fa-solid fa-boxes-stacked"></i>
+                                        <span>
+                                            <strong>Stock aún no descontado</strong>
+                                            <small>Al confirmar te preguntaremos cómo gestionar el inventario.</small>
+                                        </span>
+                                    </div>
+                                <% } %>
+
+                                <button type="submit" class="btn admin-order-save-button" data-order-save disabled>
+                                    <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar cambio
+                                </button>
+
+                                <p class="admin-order-cancel-warning d-none" data-cancel-warning>
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                                    Cancelar es definitivo: este pedido no podrá volver a cambiar de estado.
+                                    <% if (pedido.stockProcesado) { %>
+                                        El stock ya descontado no será repuesto automáticamente.
+                                    <% } %>
+                                </p>
+                            </form>
+                        <% } %>
+                    </article>
+                <% }) %>
+            </section>
+        <% } %>
+    </main>
+
+    <div class="modal fade admin-order-decision-modal" id="orderDecisionModal" tabindex="-1"
+        aria-labelledby="orderDecisionTitle" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <span class="admin-order-decision-eyebrow" id="orderDecisionEyebrow">Confirmar pedido</span>
+                        <h2 class="modal-title" id="orderDecisionTitle"></h2>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Volver">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="admin-order-decision-icon" id="orderDecisionIcon">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <p id="orderDecisionMessage"></p>
+
+                    <div class="admin-order-confirm-actions" data-confirm-actions>
+                        <button type="button" class="btn admin-order-confirm-stock" data-confirm-with-stock>
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                            <span>
+                                <strong>Confirmar y descontar stock</strong>
+                                <small>Descuenta ahora las unidades del pedido.</small>
+                            </span>
+                        </button>
+                        <button type="button" class="btn admin-order-confirm-without-stock"
+                            data-confirm-without-stock>
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>
+                                <strong>Confirmar sin descontar</strong>
+                                <small>Podrás procesar el stock posteriormente.</small>
+                            </span>
+                        </button>
+                    </div>
+
+                    <button type="button" class="btn admin-order-confirm-cancel d-none" data-confirm-cancel>
+                        <i class="fa-solid fa-ban mr-1"></i> Sí, cancelar definitivamente
+                    </button>
+                    <button type="button" class="btn btn-light admin-order-decision-back" data-dismiss="modal">
+                        Volver sin guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeOrderForm = null;
+        const orderNotice = document.querySelector('[data-order-notice]');
+        const decisionModal = $('#orderDecisionModal');
+        const decisionEyebrow = document.getElementById('orderDecisionEyebrow');
+        const decisionTitle = document.getElementById('orderDecisionTitle');
+        const decisionMessage = document.getElementById('orderDecisionMessage');
+        const decisionIcon = document.getElementById('orderDecisionIcon');
+        const confirmActions = document.querySelector('[data-confirm-actions]');
+        const cancelButton = document.querySelector('[data-confirm-cancel]');
+        const decisionButtons = document.querySelectorAll(
+            '[data-confirm-with-stock], [data-confirm-without-stock], [data-confirm-cancel]'
+        );
+        let orderDecisionSubmitting = false;
+
+        if (orderNotice) {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('notice');
+            window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+
+            let noticeDismissed = false;
+            const dismissNotice = () => {
+                if (noticeDismissed) return;
+                noticeDismissed = true;
+                orderNotice.classList.add('is-leaving');
+                window.setTimeout(() => orderNotice.remove(), 220);
+            };
+            orderNotice.querySelector('[data-order-notice-close]')
+                .addEventListener('click', dismissNotice);
+            window.setTimeout(dismissNotice, 4500);
+        }
+
+        const submitActiveOrderForm = (processStock) => {
+            if (!activeOrderForm || orderDecisionSubmitting) return;
+            orderDecisionSubmitting = true;
+            decisionButtons.forEach((button) => {
+                button.disabled = true;
+            });
+            activeOrderForm.querySelector('[data-process-stock-field]').value = processStock ? 'true' : 'false';
+            HTMLFormElement.prototype.submit.call(activeOrderForm);
+        };
+
+        const showConfirmationDecision = (form) => {
+            activeOrderForm = form;
+            const number = form.dataset.orderNumber;
+            decisionEyebrow.textContent = 'Confirmar pedido';
+            decisionTitle.textContent = `Pedido #${number}`;
+            decisionMessage.textContent = 'Elige cómo deseas confirmar este pedido. Esta decisión evita descontar stock por error.';
+            decisionIcon.className = 'admin-order-decision-icon';
+            decisionIcon.innerHTML = '<i class="fa-solid fa-boxes-stacked"></i>';
+            confirmActions.classList.remove('d-none');
+            cancelButton.classList.add('d-none');
+            decisionModal.modal('show');
+        };
+
+        const showCancellationDecision = (form) => {
+            activeOrderForm = form;
+            const number = form.dataset.orderNumber;
+            const stockWasProcessed = form.dataset.stockProcessed === 'true';
+            decisionEyebrow.textContent = 'Acción definitiva';
+            decisionTitle.textContent = `Cancelar pedido #${number}`;
+            decisionMessage.textContent = stockWasProcessed
+                ? 'El pedido no podrá volver a cambiar de estado y el stock descontado no será repuesto automáticamente.'
+                : 'El pedido no podrá volver a cambiar de estado. Esta acción es definitiva.';
+            decisionIcon.className = 'admin-order-decision-icon admin-order-decision-icon--danger';
+            decisionIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            confirmActions.classList.add('d-none');
+            cancelButton.classList.remove('d-none');
+            decisionModal.modal('show');
+        };
+
+        document.querySelectorAll('[data-order-status-form]').forEach((form) => {
+            const select = form.querySelector('[data-order-status-select]');
+            const cancelWarning = form.querySelector('[data-cancel-warning]');
+            const saveButton = form.querySelector('[data-order-save]');
+
+            const syncOrderControls = () => {
+                const statusChanged = select.value !== form.dataset.originalStatus;
+                saveButton.disabled = !statusChanged;
+                cancelWarning.classList.toggle('d-none', select.value !== 'cancelado');
+            };
+
+            select.addEventListener('change', syncOrderControls);
+            form.addEventListener('submit', (event) => {
+                if (select.value === 'cancelado') {
+                    event.preventDefault();
+                    showCancellationDecision(form);
+                    return;
+                }
+
+                if (select.value === 'confirmado' && form.dataset.stockProcessed !== 'true') {
+                    event.preventDefault();
+                    showConfirmationDecision(form);
+                }
+            });
+            syncOrderControls();
+        });
+
+        document.querySelector('[data-confirm-with-stock]')
+            .addEventListener('click', () => submitActiveOrderForm(true));
+        document.querySelector('[data-confirm-without-stock]')
+            .addEventListener('click', () => submitActiveOrderForm(false));
+        cancelButton.addEventListener('click', () => submitActiveOrderForm(false));
+        decisionModal.on('hidden.bs.modal', () => {
+            activeOrderForm = null;
+            orderDecisionSubmitting = false;
+            decisionButtons.forEach((button) => {
+                button.disabled = false;
+            });
+        });
+    </script>
+</body>
+
+</html>

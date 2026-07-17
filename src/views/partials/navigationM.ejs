@@ -33,6 +33,13 @@
                     <span>Categorías</span>
                 </a>
             </li>
+            <li class="nav-item <%= adminPath === '/mode/pedidos' ? 'active' : '' %>">
+                <a class="nav-link admin-nav-link" href="/mode/pedidos"
+                    <% if (adminPath === '/mode/pedidos') { %>aria-current="page"<% } %>>
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Pedidos</span>
+                </a>
+            </li>
             <li class="nav-item <%= adminPath === '/mode/auditoria' ? 'active' : '' %>">
                 <a class="nav-link admin-nav-link" href="/mode/auditoria"
                     <% if (adminPath === '/mode/auditoria') { %>aria-current="page"<% } %>>

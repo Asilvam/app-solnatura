@@ -20,6 +20,7 @@ if (process.env.NODE_ENV === "production") {
 
 // middlewares
 app.use(morgan("dev"));
+app.use(express.json({ limit: "32kb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(loadAdminSession);
 
