@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-// const URI ='mongodb+srv://root:admin@cluster0-jim6x.mongodb.net/test?retryWrites=true&w=majority';
 const URI = process.env.MONGODB_URI;
 mongoose.set('strictQuery', true);
 mongoose.connect(URI, {
