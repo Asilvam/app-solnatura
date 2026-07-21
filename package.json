@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "admin:setup": "node scripts/setup-admin.js",
+    "db:ensure-product-code-index": "node scripts/ensure-product-code-index.js",
     "dev": "nodemon src",
     "start": "node src",
     "sonarqube": "sonar-scanner"
