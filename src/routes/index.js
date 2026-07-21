@@ -6,6 +6,11 @@ const upload = require("../middlewares/upload");
 const recordAudit = require("../services/audit");
 const buildCatalogWorkbook = require("../services/catalogExport");
 const {
+    MODE_PAGE_BLOCK_SIZE,
+    clearCatalogPageCache,
+    getCatalogCacheValue,
+} = require("../services/catalogPageCache");
+const {
     normalizeCategoryCode,
     normalizeCode,
     normalizeText,
@@ -190,6 +195,7 @@ const parseProductImage = (view) => (req, res, next) => {
                         categorias,
                         values: productFormValues(req.body),
                         errors,
+                        returnTo: safeModeReturn(req.body.returnTo),
                     });
                 }
 
@@ -390,6 +396,15 @@ const createModeUrlBuilder = (filters) => (overrides = {}) => {
     const query = params.toString();
     return query ? `/mode?${query}` : "/mode";
 };
+
+const createModeCacheKey = (filters) => JSON.stringify({
+    q: filters.q,
+    estado: filters.estado,
+    stock: filters.stock,
+    categoria: filters.categoria,
+    oferta: filters.oferta,
+    orden: filters.orden,
+});
 
 router.get("/", async (req, res, next) => {
     try {
@@ -596,6 +611,7 @@ router.post("/modecat", requireAdmin, requireCsrf, async (req, res, next) => {
 
         const categoria = new Categoria(values);
         await categoria.save();
+        clearCatalogPageCache();
         await recordAudit(req, {
             action: "category.create",
             entityType: "Categoria",
@@ -690,6 +706,8 @@ router.post("/categoria/:id/update", requireAdmin, requireCsrf, async (req, res,
         } finally {
             await session.endSession();
         }
+
+        clearCatalogPageCache();
 
         await recordAudit(req, {
             action: "category.update",
@@ -928,6 +946,8 @@ router.post("/mode/pedidos/:id/estado", requireAdmin, requireCsrf, async (req, r
             return res.redirect("/mode/pedidos");
         }
 
+        if (processedStock) clearCatalogPageCache();
+
         await recordAudit(req, {
             action: processedStock ? "order.stock-process" : "order.status-update",
             entityType: "Pedido",
@@ -989,67 +1009,87 @@ router.get("/mode", requireAdmin, async (req, res, next) => {
     try {
         const filters = normalizeModeFilters(req.query);
         const imageFilter = buildImageFilter(filters);
+        const filterCacheKey = createModeCacheKey(filters);
+        const [total, catalogContext] = await Promise.all([
+            getCatalogCacheValue(`mode:total:${filterCacheKey}`, () => (
+                Image.countDocuments(imageFilter)
+            )),
+            getCatalogCacheValue("mode:context", async () => {
+                const [categorias, statsResult] = await Promise.all([
+                    Categoria.find({ estado: true }).sort({ nombre: 1 }).lean(),
+                    Image.aggregate([
+                        {
+                            $group: {
+                                _id: null,
+                                total: { $sum: 1 },
+                                vigentes: { $sum: { $cond: [{ $eq: ["$estado", true] }, 1, 0] } },
+                                sinStock: {
+                                    $sum: {
+                                        $cond: [
+                                            { $lte: [{ $ifNull: ["$cantidad", 0] }, 0] },
+                                            1,
+                                            0,
+                                        ],
+                                    },
+                                },
+                                stockBajo: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $and: [
+                                                    { $gt: [{ $ifNull: ["$cantidad", 0] }, 0] },
+                                                    { $lte: [{ $ifNull: ["$cantidad", 0] }, LOW_STOCK_LIMIT] },
+                                                ],
+                                            },
+                                            1,
+                                            0,
+                                        ],
+                                    },
+                                },
+                                ofertas: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $gt: [
+                                                    { $ifNull: ["$precioAnterior", 0] },
+                                                    { $ifNull: ["$precio", 0] },
+                                                ],
+                                            },
+                                            1,
+                                            0,
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    ]),
+                ]);
 
-        const [total, categorias, statsResult] = await Promise.all([
-            Image.countDocuments(imageFilter),
-            Categoria.find({ estado: true }).sort({ nombre: 1 }),
-            Image.aggregate([
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: 1 },
-                        vigentes: { $sum: { $cond: [{ $eq: ["$estado", true] }, 1, 0] } },
-                        sinStock: {
-                            $sum: {
-                                $cond: [
-                                    { $lte: [{ $ifNull: ["$cantidad", 0] }, 0] },
-                                    1,
-                                    0,
-                                ],
-                            },
-                        },
-                        stockBajo: {
-                            $sum: {
-                                $cond: [
-                                    {
-                                        $and: [
-                                            { $gt: [{ $ifNull: ["$cantidad", 0] }, 0] },
-                                            { $lte: [{ $ifNull: ["$cantidad", 0] }, LOW_STOCK_LIMIT] },
-                                        ],
-                                    },
-                                    1,
-                                    0,
-                                ],
-                            },
-                        },
-                        ofertas: {
-                            $sum: {
-                                $cond: [
-                                    {
-                                        $gt: [
-                                            { $ifNull: ["$precioAnterior", 0] },
-                                            { $ifNull: ["$precio", 0] },
-                                        ],
-                                    },
-                                    1,
-                                    0,
-                                ],
-                            },
-                        },
-                    },
-                },
-            ]),
+                return { categorias, statsResult };
+            }),
         ]);
 
         const totalPages = Math.max(Math.ceil(total / MODE_PAGE_SIZE), 1);
         const page = Math.min(filters.page, totalPages);
         filters.page = page;
 
-        const images = await Image.find(imageFilter)
-            .sort(modeSortOptions[filters.orden])
-            .skip((page - 1) * MODE_PAGE_SIZE)
-            .limit(MODE_PAGE_SIZE);
+        const firstPageInBlock = Math.floor((page - 1) / MODE_PAGE_BLOCK_SIZE)
+            * MODE_PAGE_BLOCK_SIZE + 1;
+        const productsInBlock = await getCatalogCacheValue(
+            `mode:block:${filterCacheKey}:${firstPageInBlock}`,
+            () => Image.find(imageFilter)
+                .sort(modeSortOptions[filters.orden])
+                .skip((firstPageInBlock - 1) * MODE_PAGE_SIZE)
+                .limit(MODE_PAGE_SIZE * MODE_PAGE_BLOCK_SIZE)
+                .lean()
+        );
+        const pageOffsetInBlock = (page - firstPageInBlock) * MODE_PAGE_SIZE;
+        const images = productsInBlock.slice(
+            pageOffsetInBlock,
+            pageOffsetInBlock + MODE_PAGE_SIZE
+        );
 
+        const { categorias, statsResult } = catalogContext;
         const stats = statsResult[0] || {
             total: 0,
             vigentes: 0,
@@ -1149,6 +1189,7 @@ router.post("/mode/bulk", requireAdmin, requireCsrf, async (req, res, next) => {
         }
 
         const result = await Image.updateMany(updateFilter, update, { runValidators: true });
+        clearCatalogPageCache();
         if (action === "activar" || action === "desactivar") {
             summary = `${result.modifiedCount} productos marcados como ${update.estado ? "vigentes" : "no vigentes"}`;
         }
@@ -1223,6 +1264,7 @@ router.post("/mode/:id/stock", requireAdmin, requireCsrf, async (req, res, next)
             }
             return redirectWithNotice(res, returnTo, message);
         }
+        clearCatalogPageCache();
         const previousStock = product.cantidad - delta;
 
         await recordAudit(req, {
@@ -1287,6 +1329,8 @@ router.post("/mode/:id/estado", requireAdmin, requireCsrf, async (req, res, next
             return redirectWithNotice(res, returnTo, message);
         }
 
+        clearCatalogPageCache();
+
         await recordAudit(req, {
             action: "product.status",
             entityType: "Image",
@@ -1322,6 +1366,7 @@ router.get("/update/:id", requireAdmin, async (req, res, next) => {
             categorias,
             values: productFormValues(image),
             errors: {},
+            returnTo: safeModeReturn(req.query.returnTo),
         });
     } catch (err) {
         err.userMessage = "No se encontró la imagen a editar. Puede que haya sido eliminada.";
@@ -1330,6 +1375,8 @@ router.get("/update/:id", requireAdmin, async (req, res, next) => {
 });
 
 router.post("/update/:id", requireAdmin, parseProductImage("update"), requireCsrf, async (req, res, next) => {
+    const returnTo = safeModeReturn(req.body.returnTo);
+
     try {
         const { id } = req.params;
         if (!isValidObjectId(id)) return res.status(404).send("Producto no encontrado.");
@@ -1345,6 +1392,7 @@ router.post("/update/:id", requireAdmin, parseProductImage("update"), requireCsr
                 categorias,
                 values: productFormValues(req.body),
                 errors: validation.errors,
+                returnTo,
             });
         }
 
@@ -1362,6 +1410,7 @@ router.post("/update/:id", requireAdmin, parseProductImage("update"), requireCsr
         }
 
         await image.save();
+        clearCatalogPageCache();
 
         if (req.file && previousPublicId && previousPublicId !== image.public_id) {
             try {
@@ -1381,7 +1430,7 @@ router.post("/update/:id", requireAdmin, parseProductImage("update"), requireCsr
                 estado: image.estado,
             },
         });
-        res.redirect("/mode");
+        redirectWithNotice(res, returnTo, `Producto actualizado: ${image.title}.`);
     } catch (err) {
         err.userMessage = "Error al actualizar la imagen. Verifica los datos e intenta nuevamente.";
         next(err);
@@ -1435,6 +1484,7 @@ router.post("/upload", requireAdmin, parseProductImage("upload"), requireCsrf, a
             size: req.file.size,
         });
         await image.save();
+        clearCatalogPageCache();
         await recordAudit(req, {
             action: "product.create",
             entityType: "Image",
@@ -1485,6 +1535,8 @@ router.post("/image/:id/delete", requireAdmin, requireCsrf, async (req, res, nex
         const imageDeleted = await Image.findByIdAndDelete(id);
         if (!imageDeleted) return res.status(404).send("Producto no encontrado.");
 
+        clearCatalogPageCache();
+
         const result = await cloudinary.v2.uploader.destroy(imageDeleted.public_id, { invalidate: true });
         if (result.result !== 'ok') {
             console.error("Failed to delete image from Cloudinary");
@@ -1529,6 +1581,7 @@ router.post("/categoria/:id/delete", requireAdmin, requireCsrf, async (req, res,
         }
 
         await categoria.deleteOne();
+        clearCatalogPageCache();
 
         await recordAudit(req, {
             action: "category.delete",

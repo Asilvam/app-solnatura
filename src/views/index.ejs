@@ -137,13 +137,52 @@
                 </form>
             </section>
 
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+            <div class="admin-catalog-results-header mb-3">
                 <p class="text-muted mb-0">
                     <strong class="text-dark"><%= pagination.total %></strong>
                     <%= pagination.total === 1 ? "producto encontrado" : "productos encontrados" %>
                 </p>
                 <% if (pagination.totalPages > 1) { %>
-                    <small class="text-muted">Página <%= pagination.page %> de <%= pagination.totalPages %></small>
+                    <% let firstVisiblePage = Math.max(1, pagination.page - 2); %>
+                    <% let lastVisiblePage = Math.min(pagination.totalPages, firstVisiblePage + 4); %>
+                    <% firstVisiblePage = Math.max(1, lastVisiblePage - 4); %>
+                    <div class="admin-catalog-page-position">
+                        <small class="text-muted">Página <%= pagination.page %> de <%= pagination.totalPages %></small>
+                        <nav aria-label="Paginación del catálogo" class="admin-catalog-pagination">
+                            <ul class="pagination justify-content-end flex-wrap mb-0">
+                                <li class="page-item <%= pagination.page === 1 ? "disabled" : "" %>">
+                                    <a class="page-link admin-page-link--jump" href="<%= modeUrl({ page: 1 }) %>"
+                                        aria-label="Ir a la primera página" title="Primera página">
+                                        <i class="fa-solid fa-angles-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item <%= pagination.page === 1 ? "disabled" : "" %>">
+                                    <a class="page-link" href="<%= modeUrl({ page: pagination.page - 1 }) %>"
+                                        aria-label="Página anterior">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                <% for (let pageNumber = firstVisiblePage; pageNumber <= lastVisiblePage; pageNumber += 1) { %>
+                                    <li class="page-item <%= pageNumber === pagination.page ? "active" : "" %>">
+                                        <a class="page-link" href="<%= modeUrl({ page: pageNumber }) %>"
+                                            <%= pageNumber === pagination.page ? 'aria-current="page"' : '' %>><%= pageNumber %></a>
+                                    </li>
+                                <% } %>
+                                <li class="page-item <%= pagination.page === pagination.totalPages ? "disabled" : "" %>">
+                                    <a class="page-link" href="<%= modeUrl({ page: pagination.page + 1 }) %>"
+                                        aria-label="Página siguiente">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item <%= pagination.page === pagination.totalPages ? "disabled" : "" %>">
+                                    <a class="page-link admin-page-link--jump" href="<%= modeUrl({ page: pagination.totalPages }) %>"
+                                        aria-label="Ir a la última página" title="Última página">
+                                        <i class="fa-solid fa-angles-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 <% } %>
             </div>
 
@@ -240,7 +279,8 @@
                                 <p class="text-muted small mb-3 admin-product-description"><%= image.description %></p>
                                 <div class="row no-gutters mt-auto">
                                     <div class="col-6 pr-1">
-                                        <a href="/update/<%= image._id %>" class="btn btn-outline-primary btn-block btn-sm rounded-pill">
+                                        <a href="/update/<%= image._id %>?returnTo=<%= encodeURIComponent(currentModeUrl) %>"
+                                            class="btn btn-outline-primary btn-block btn-sm rounded-pill">
                                             <i class="fa-solid fa-pen-to-square"></i> Editar
                                         </a>
                                     </div>
@@ -274,29 +314,6 @@
                 </div>
             <% } %>
 
-            <% if (pagination.totalPages > 1) { %>
-                <% const firstVisiblePage = Math.max(1, pagination.page - 2); %>
-                <% const lastVisiblePage = Math.min(pagination.totalPages, pagination.page + 2); %>
-                <nav aria-label="Paginación del catálogo" class="mt-4">
-                    <ul class="pagination justify-content-center flex-wrap">
-                        <li class="page-item <%= pagination.page === 1 ? "disabled" : "" %>">
-                            <a class="page-link" href="<%= modeUrl({ page: pagination.page - 1 }) %>" aria-label="Página anterior">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </a>
-                        </li>
-                        <% for (let pageNumber = firstVisiblePage; pageNumber <= lastVisiblePage; pageNumber += 1) { %>
-                            <li class="page-item <%= pageNumber === pagination.page ? "active" : "" %>">
-                                <a class="page-link" href="<%= modeUrl({ page: pageNumber }) %>"><%= pageNumber %></a>
-                            </li>
-                        <% } %>
-                        <li class="page-item <%= pagination.page === pagination.totalPages ? "disabled" : "" %>">
-                            <a class="page-link" href="<%= modeUrl({ page: pagination.page + 1 }) %>" aria-label="Página siguiente">
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            <% } %>
         </main>
 
         <div class="modal fade" id="deleteProductModal" tabindex="-1" role="dialog"

@@ -2322,6 +2322,55 @@ h6 {
     color: #fff;
 }
 
+.admin-catalog-pagination {
+    display: flex;
+    align-items: center;
+}
+
+.admin-catalog-results-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.admin-catalog-results-header>p {
+    order: 2;
+    text-align: right;
+}
+
+.admin-catalog-page-position {
+    display: flex;
+    order: 1;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.admin-catalog-pagination .page-link {
+    display: inline-flex;
+    min-width: 32px;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.08rem;
+    padding: 0.32rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.admin-catalog-pagination .admin-page-link--jump {
+    min-width: 36px;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+    background-color: transparent;
+    font-size: 0.72rem;
+}
+
+.admin-catalog-pagination .page-item.disabled .page-link {
+    background-color: #f4f2f5;
+    color: #aaa2ad;
+}
+
 
 /* --- Cards --- */
 .card {
@@ -3372,6 +3421,40 @@ a.public-page-link:focus-visible {
 @media (max-width: 767px) {
     .admin-catalog-page {
         padding: 1rem !important;
+    }
+
+    .admin-catalog-page-position {
+        order: 2;
+        width: 100%;
+        align-items: center;
+        margin-top: 0;
+    }
+
+    .admin-catalog-results-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: left;
+    }
+
+    .admin-catalog-results-header>p {
+        order: 1;
+        text-align: left;
+    }
+
+    .admin-catalog-page-position .admin-catalog-pagination {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+    }
+
+    .admin-catalog-page-position .pagination {
+        min-width: max-content;
+        justify-content: flex-start !important;
+        flex-wrap: nowrap !important;
+        margin-right: auto;
+        margin-left: auto;
     }
 
     .admin-bulk-bar {

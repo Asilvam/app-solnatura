@@ -19,7 +19,7 @@
                 <h1>Editar producto</h1>
                 <p>Actualiza la información que verá el cliente en la tienda.</p>
             </div>
-            <a href="/mode" class="btn btn-outline-primary rounded-pill px-4">
+            <a href="<%= returnTo %>" class="btn btn-outline-primary rounded-pill px-4">
                 <i class="fa-solid fa-arrow-left mr-2"></i>Volver al catálogo
             </a>
         </header>
@@ -33,6 +33,7 @@
 
         <form action="/update/<%= image._id %>" method="post" enctype="multipart/form-data" class="admin-editor-form">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="returnTo" value="<%= returnTo %>" />
 
             <div class="admin-editor-layout">
                 <aside class="admin-editor-media-card">
@@ -172,7 +173,7 @@
                     </section>
 
                     <div class="admin-editor-actions">
-                        <a href="/mode" class="btn btn-light rounded-pill px-4">Cancelar</a>
+                        <a href="<%= returnTo %>" class="btn btn-light rounded-pill px-4">Cancelar</a>
                         <button type="submit" class="btn btn-primary rounded-pill px-4">
                             <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar cambios
                         </button>
