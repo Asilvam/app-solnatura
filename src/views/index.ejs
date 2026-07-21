@@ -126,13 +126,24 @@
                             </div>
                         </div>
                     </div>
-                    <div class="d-flex flex-wrap justify-content-end admin-filter-actions">
-                        <a href="/mode" class="btn btn-light rounded-pill px-4 mr-2">
-                            <i class="fa-solid fa-rotate-left mr-1"></i> Limpiar
-                        </a>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4">
-                            <i class="fa-solid fa-filter mr-1"></i> Aplicar filtros
-                        </button>
+                    <div class="d-flex flex-wrap justify-content-between align-items-end admin-filter-actions">
+                        <div class="admin-page-size-control">
+                            <label for="filter-page-size" class="mb-0">Productos por página</label>
+                            <select id="filter-page-size" name="porPagina" class="form-control form-control-sm">
+                                <option value="12" <%= filters.porPagina === 12 ? "selected" : "" %>>12</option>
+                                <option value="24" <%= filters.porPagina === 24 ? "selected" : "" %>>24</option>
+                                <option value="36" <%= filters.porPagina === 36 ? "selected" : "" %>>36</option>
+                                <option value="48" <%= filters.porPagina === 48 ? "selected" : "" %>>48</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-action-buttons">
+                            <a href="/mode" class="btn btn-light rounded-pill px-4 mr-2">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Limpiar
+                            </a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fa-solid fa-filter mr-1"></i> Aplicar filtros
+                            </button>
+                        </div>
                     </div>
                 </form>
             </section>

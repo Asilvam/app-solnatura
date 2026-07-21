@@ -8,7 +8,7 @@ Este documento reúne las mejoras propuestas para administrar productos, categor
 - [x] Filtros combinables por texto, vigencia, stock, categoría y oferta.
 - [x] Búsqueda por nombre, código y descripción.
 - [x] Ordenamiento por fecha, nombre, precio y stock.
-- [x] Paginación de 12 productos conservando los filtros en la URL.
+- [x] Paginación configurable de 12, 24, 36 o 48 productos, conservando los filtros en la URL.
 - [x] Paginación compacta con accesos a primera y última página.
 - [x] Caché temporal de resultados administrativos en bloques de 10 páginas.
 - [x] Retorno a la misma página, filtros y orden después de editar o cancelar.
@@ -24,20 +24,23 @@ Rama de implementación: `mejora/catalogo-paginacion-retorno`.
 
 ### Paginación y experiencia de uso
 
-- El catálogo administrativo continúa mostrando 12 productos por página.
+- El catálogo administrativo muestra 12 productos por página de forma predeterminada.
+- El administrador puede seleccionar 12, 24, 36 o 48 productos por página desde los filtros.
 - El paginador muestra un máximo de cinco números y accesos directos a la primera y última página.
 - En escritorio, la página actual y el paginador se ubican a la izquierda; el total de productos encontrados se alinea a la derecha bajo los filtros.
 - En móvil, el total aparece primero y la navegación queda centrada. Las pantallas muy estrechas permiten desplazamiento horizontal sin ocultar controles.
-- La página, búsqueda, filtros y orden permanecen en la URL para que la navegación pueda restaurarse.
+- La página, el tamaño seleccionado, la búsqueda, los filtros y el orden permanecen en la URL para que la navegación pueda restaurarse.
 
 ### Caché por bloques
 
-- Cada combinación de búsqueda, filtros y orden carga hasta 10 páginas en una sola consulta: 120 productos como máximo.
+- Cada combinación de búsqueda, filtros, orden y tamaño carga hasta 10 páginas en una sola consulta: 120, 240, 360 o 480 productos como máximo según la opción seleccionada.
 - El bloque, el total filtrado y el resumen administrativo se mantienen en memoria durante 60 segundos.
 - La caché admite hasta 120 entradas para limitar el consumo de memoria.
 - Solicitudes simultáneas para el mismo bloque comparten la consulta que ya está en curso.
 - La caché se invalida inmediatamente al crear, editar o eliminar productos; modificar stock o vigencia; aplicar acciones masivas; procesar stock de pedidos; o crear, editar y eliminar categorías.
 - La caché es local al proceso de Node.js. Si la aplicación usa varias instancias, cada una conserva su propia caché por un máximo de 60 segundos.
+
+La caché reduce el acceso a MongoDB, pero no elimina la navegación del navegador. Cada enlace del paginador sigue solicitando y renderizando una página EJS completa; por eso puede percibirse una recarga aunque el bloque de datos provenga de memoria. Evitar ese efecto visual requiere una capa adicional de navegación AJAX/PJAX o actualización parcial del catálogo en el frontend.
 
 ### Retorno después de editar
 

@@ -1031,6 +1031,22 @@ h6 {
     color: var(--morado-principal);
 }
 
+.admin-page-size-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.admin-page-size-control .form-control {
+    width: 78px;
+    height: 36px;
+}
+
+.admin-filter-action-buttons {
+    display: flex;
+    align-items: center;
+}
+
 .admin-notice {
     border: 1px solid var(--naranja-pastel);
     border-left: 4px solid var(--naranja-intenso);
@@ -3457,6 +3473,15 @@ a.public-page-link:focus-visible {
         margin-left: auto;
     }
 
+    .admin-filter-actions {
+        gap: 0.75rem;
+    }
+
+    .admin-page-size-control {
+        width: 100%;
+        justify-content: space-between;
+    }
+
     .admin-bulk-bar {
         position: static;
         align-items: stretch;
@@ -3639,6 +3664,11 @@ a.public-page-link:focus-visible {
     .admin-filter-actions .btn {
         width: 100%;
         margin: 0 0 0.5rem !important;
+    }
+
+    .admin-filter-action-buttons {
+        width: 100%;
+        flex-direction: column;
     }
 
     .public-catalog-header {

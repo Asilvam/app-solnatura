@@ -32,7 +32,8 @@ const AuditLog = require("../models/AuditLog");
 const Pedido = require("../models/Pedido");
 
 const PUBLIC_PAGE_SIZE = 24;
-const MODE_PAGE_SIZE = 12;
+const MODE_DEFAULT_PAGE_SIZE = 12;
+const MODE_PAGE_SIZE_OPTIONS = [12, 24, 36, 48];
 const LOW_STOCK_LIMIT = 5;
 const ORDER_LIST_LIMIT = 100;
 const ORDER_ITEM_LIMIT = 50;
@@ -319,6 +320,7 @@ const modeSortOptions = {
 
 const normalizeModeFilters = (query) => {
     const requestedPage = Number.parseInt(query.page, 10);
+    const requestedPageSize = Number.parseInt(query.porPagina, 10);
     const estado = ["vigente", "no-vigente"].includes(query.estado) ? query.estado : "";
     const stock = ["con-stock", "sin-stock", "bajo"].includes(query.stock) ? query.stock : "";
     const oferta = query.oferta === "si" ? "si" : "";
@@ -333,6 +335,9 @@ const normalizeModeFilters = (query) => {
         categoria: typeof query.categoria === "string" ? query.categoria.trim().slice(0, 100) : "",
         oferta,
         orden,
+        porPagina: MODE_PAGE_SIZE_OPTIONS.includes(requestedPageSize)
+            ? requestedPageSize
+            : MODE_DEFAULT_PAGE_SIZE,
         page: Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
     };
 };
@@ -389,6 +394,10 @@ const createModeUrlBuilder = (filters) => (overrides = {}) => {
         params.set("orden", values.orden);
     }
 
+    if (Number(values.porPagina) !== MODE_DEFAULT_PAGE_SIZE) {
+        params.set("porPagina", values.porPagina);
+    }
+
     if (Number(values.page) > 1) {
         params.set("page", values.page);
     }
@@ -404,6 +413,7 @@ const createModeCacheKey = (filters) => JSON.stringify({
     categoria: filters.categoria,
     oferta: filters.oferta,
     orden: filters.orden,
+    porPagina: filters.porPagina,
 });
 
 router.get("/", async (req, res, next) => {
@@ -1009,6 +1019,7 @@ router.get("/mode", requireAdmin, async (req, res, next) => {
     try {
         const filters = normalizeModeFilters(req.query);
         const imageFilter = buildImageFilter(filters);
+        const pageSize = filters.porPagina;
         const filterCacheKey = createModeCacheKey(filters);
         const [total, catalogContext] = await Promise.all([
             getCatalogCacheValue(`mode:total:${filterCacheKey}`, () => (
@@ -1069,7 +1080,7 @@ router.get("/mode", requireAdmin, async (req, res, next) => {
             }),
         ]);
 
-        const totalPages = Math.max(Math.ceil(total / MODE_PAGE_SIZE), 1);
+        const totalPages = Math.max(Math.ceil(total / pageSize), 1);
         const page = Math.min(filters.page, totalPages);
         filters.page = page;
 
@@ -1079,14 +1090,14 @@ router.get("/mode", requireAdmin, async (req, res, next) => {
             `mode:block:${filterCacheKey}:${firstPageInBlock}`,
             () => Image.find(imageFilter)
                 .sort(modeSortOptions[filters.orden])
-                .skip((firstPageInBlock - 1) * MODE_PAGE_SIZE)
-                .limit(MODE_PAGE_SIZE * MODE_PAGE_BLOCK_SIZE)
+                .skip((firstPageInBlock - 1) * pageSize)
+                .limit(pageSize * MODE_PAGE_BLOCK_SIZE)
                 .lean()
         );
-        const pageOffsetInBlock = (page - firstPageInBlock) * MODE_PAGE_SIZE;
+        const pageOffsetInBlock = (page - firstPageInBlock) * pageSize;
         const images = productsInBlock.slice(
             pageOffsetInBlock,
-            pageOffsetInBlock + MODE_PAGE_SIZE
+            pageOffsetInBlock + pageSize
         );
 
         const { categorias, statsResult } = catalogContext;
@@ -1115,7 +1126,7 @@ router.get("/mode", requireAdmin, async (req, res, next) => {
             notice: typeof req.query.notice === "string" ? req.query.notice.slice(0, 180) : "",
             pagination: {
                 page,
-                pageSize: MODE_PAGE_SIZE,
+                pageSize,
                 total,
                 totalPages,
             },
